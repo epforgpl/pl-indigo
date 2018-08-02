@@ -9,9 +9,11 @@ greenlet = "==0.4.13"
 gunicorn = "==19.7.1"
 wsgiref = "==0.1.2"
 django-filter = ">=1.0,<2"
-indigo = {ref = "00c83900a0ec304cb5b9f9389b55a190ed901283", git = "https://github.com/OpenUpSA/indigo.git"}
+indigo = {ref = "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b", git = "https://github.com/OpenUpSA/indigo.git"}
+"beautifulsoup4" = "*"
 
 [dev-packages]
+indigo = {ref = "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b", git = "https://github.com/OpenUpSA/indigo.git", extras = ["dev"]}
 
 [requires]
 python_version = "2.7"

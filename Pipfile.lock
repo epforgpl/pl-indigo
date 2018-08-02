@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "9cc06c2ca2eea6d6776d57f28c924cb9448879ba449071b981e6db8d991a4ad2"
+            "sha256": "79a52f6316744d94f86203848fdfa8b97972cc0b1770ded1abcd41ef221adf2a"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -16,6 +16,15 @@
         ]
     },
     "default": {
+        "beautifulsoup4": {
+            "hashes": [
+                "sha256:272081ad78c5495ba67083a0e50920163701fa6fe67fbb5eefeb21b5dd88c40b",
+                "sha256:5a3d659840960a4107047b6328d6d4cdaaee69939bf11adc07466a1856c99a80",
+                "sha256:bd43a3b26d2886acd63070c43da821b60dea603eb6d45bab0294aac6129adbfa"
+            ],
+            "index": "pypi",
+            "version": "==4.6.1"
+        },
         "django-filter": {
             "hashes": [
                 "sha256:ea204242ea83790e1512c9d0d8255002a652a6f4986e93cee664f28955ba0c22",
@@ -85,7 +94,7 @@
         },
         "indigo": {
             "git": "https://github.com/OpenUpSA/indigo.git",
-            "ref": "00c83900a0ec304cb5b9f9389b55a190ed901283"
+            "ref": "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b"
         },
         "wsgiref": {
             "hashes": [
@@ -95,5 +104,10 @@
             "version": "==0.1.2"
         }
     },
-    "develop": {}
+    "develop": {
+        "indigo": {
+            "git": "https://github.com/OpenUpSA/indigo.git",
+            "ref": "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b"
+        }
+    }
 }
