@@ -8,7 +8,6 @@ gevent = "==1.2.2"
 greenlet = "==0.4.13"
 gunicorn = "==19.7.1"
 wsgiref = "==0.1.2"
-django-filter = ">=1.0,<2"
 indigo = {ref = "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b", git = "https://github.com/OpenUpSA/indigo.git"}
 "beautifulsoup4" = "*"
 
