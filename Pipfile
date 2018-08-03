@@ -8,11 +8,11 @@ gevent = "==1.2.2"
 greenlet = "==0.4.13"
 gunicorn = "==19.7.1"
 wsgiref = "==0.1.2"
-indigo = {ref = "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b", git = "https://github.com/OpenUpSA/indigo.git"}
-"beautifulsoup4" = "*"
+indigo = {ref = "a7ed6bac81ef1111346ee0e465f79faa4bd97cc3", git = "https://github.com/OpenUpSA/indigo.git", editable = true}
+"beautifulsoup4" = ">=4.4.1"
 
 [dev-packages]
-indigo = {ref = "8a17ac9e0900fc427cb4d6476dbbb6ecea28088b", git = "https://github.com/OpenUpSA/indigo.git", extras = ["dev"]}
+indigo = {ref = "a7ed6bac81ef1111346ee0e465f79faa4bd97cc3", git = "https://github.com/OpenUpSA/indigo.git", extras = ["dev"], editable = true}
 
 [requires]
 python_version = "2.7"
