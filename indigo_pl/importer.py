@@ -35,19 +35,36 @@ class ImporterPL(Importer):
     """How far from top of page we assume footer is starting."""
 
     LEVEL0_PREFIX_REGEX = ur"(?:Art.|§)\s+\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
-    """Regex for catching line starts for level 0 law hierarchy units."""
+    """Regex catching line starts for level 0 law hierarchy units."""
 
-    LEVEL1_PREFIX_REGEX = ur"(?:§\s+)\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
-    """Regex for catching line starts for level 1 law hierarchy units."""
+    LEVEL1_PREFIX_REGEX = ur"(?:§\s+)?\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
+    """Regex catching line starts for level 1 law hierarchy units."""
 
-    POINT_PREFIX_WITH_INDENT = ur"^@@INDENT\d@@\d+[a-z]*(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
-    """Regex for catching line starts for "point" law hierarchy units, with indent info prepended"""
+    INDENT_REGEX = ur"^@@INDENT\d@@"
+    """Regex catching lines starting with indent mark."""
 
-    LETTER_PREFIX_WITH_INDENT = ur"^@@INDENT\d@@[a-z]+(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
-    """Regex for catching line starts for "letter" law hierarchy units,with indent info prepended"""
+    LEVEL0_PREFIX_WITH_INDENT = INDENT_REGEX + LEVEL0_PREFIX_REGEX
+    """Regex catching line starts for level 0 law hierarchy units, with indent info prepended."""
 
-    DASH_PREFIX_WITH_INDENT = ur"^@@INDENT\d@@– "
-    """Regex for catching line starts with dashes, with indent info prepended."""
+    POINT_PREFIX_WITH_INDENT = INDENT_REGEX + ur"\d+[a-z]*(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
+    """Regex catching line starts for "point" law hierarchy units, with indent info prepended."""
+
+    LETTER_PREFIX_WITH_INDENT = INDENT_REGEX + ur"[a-z]+(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
+    """Regex catching line starts for "letter" law hierarchy units, with indent info prepended."""
+
+    DASH_PREFIX_WITH_INDENT = INDENT_REGEX + ur"– "
+    """Regex catching line starts with dashes, with indent info prepended."""
+
+    INDENT_LEVEL_FREQUENCY_THRESHOLD = 5
+    """How many times a given indentation must occur in PDF so that we assume it's one of the
+    indentation levels, and not just a bit of text that for whatever reason PDF separated out
+    into its own <text> tag. Example when this may happen is a line like this:
+    "This is an important law <this is in superscript>3)</this is in superscript>, which..."
+    Because of the fact that the string '3)' is in superscript (a footnote), the text on this
+    line is broken into three <text> tags: one containing "This is an important law", second "3)",
+    third ", which...". We don't want the start of ", which..." to be counted as an indentation
+    level.
+    """
 
     locale = ('pl', None, None)
 
@@ -257,9 +274,11 @@ class ImporterPL(Importer):
         last_node = None
         for node in text_nodes:
             if node.has_attr("top") and (int(node["top"]) > last_seen_top):
-                if self.should_join_dash_line(node, last_node, last_line_start):
-                    # Moving the dash to the line above.
-                    last_node.string = last_node.get_text() + u"– "
+                if ((not last_node is None) and (not last_line_start is None) 
+                    and self.should_join_dash_line(node, last_node, last_line_start)):
+                    # Moving the dash to the line above. Note that one trailing whitespace will be
+                    # added after the dash when newlines are removed.
+                    last_node.string = last_node.get_text() + u" –"
                     node.string = re.sub(ur"@@– ", "@@", node.get_text(), re.UNICODE)
                 last_line_start = node
                 last_seen_top = int(node["top"])
@@ -293,7 +312,7 @@ class ImporterPL(Importer):
             lefts[left] = ((lefts[left] + 1) if lefts.has_key(left) else 1)
 
         # Filter out values found less than 5 times (hopefully that's a good number?)
-        lefts = {k: v for k, v in lefts.items() if v >= 5}
+        lefts = {k: v for k, v in lefts.items() if v >= self.INDENT_LEVEL_FREQUENCY_THRESHOLD}        
         # Sort by the "left" offset.
         lefts = sorted(lefts.items(), key=lambda x: x[0])
         # Return one-dimensional list of "left" attribute values for each indent level.
@@ -343,17 +362,20 @@ class ImporterPL(Importer):
         if current_indent_level == 0:
             if (last_indent_level == 0) and (not re.match(self.POINT_PREFIX_WITH_INDENT,last_line)):
                 return True
+            if (last_indent_level == 1) and (re.match(self.LEVEL0_PREFIX_WITH_INDENT, last_line)):
+                return True
         if current_indent_level == 1:
             if (last_indent_level < 2) and (not re.match(self.LETTER_PREFIX_WITH_INDENT,last_line)):
                 return True
         if current_indent_level == 2:
-            return True
-            if (not re.match('.*:$', last_node.get_text())):
-                return False
+            join = True
+            if (re.match('.*:$', last_node.get_text())):
+                join = False
             if (last_indent_level == 3):
-                return False
+                join = False
             if (last_indent_level == 2) and (re.match(self.DASH_PREFIX_WITH_INDENT, last_line)):
-                return False
+                join = False
+            return join
         # TODO: Add indent levels higher than 2.
         return False
 
