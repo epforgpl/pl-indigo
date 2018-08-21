@@ -113,26 +113,40 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:article">
-    <section class="akn-article">
-      <xsl:apply-templates select="@*" />
+  <xsl:template match="a:section[@lawtype='statute']">
+    <section class="akn-section">
       <h3>
-        <xsl:text>Artykuł </xsl:text>
-        <xsl:value-of select="./a:num" />
+        <xsl:text>Art. </xsl:text>
+        <xsl:call-template name="number-with-superscript"/>
       </h3>
-      
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
   </xsl:template>
 
-  <xsl:template match="a:section">
+  <xsl:template match="a:section[@lawtype='ordinance']">
     <section class="akn-section">
-      <xsl:apply-templates select="@*" />
       <h3>
         <xsl:text>§ </xsl:text>
-        <xsl:value-of select="./a:num" />
+        <xsl:call-template name="number-with-superscript"/>
       </h3>
-      
+      <xsl:apply-templates select="./*[not(self::a:num)]" />
+    </section>
+  </xsl:template>
+
+  <xsl:template match="a:subsection[@type='noncode']">
+    <section class="akn-subsection">
+      <xsl:if test="a:num != ''">
+        <xsl:value-of select="a:num"/>
+        <xsl:text> </xsl:text>
+      </xsl:if>
+      <xsl:apply-templates select="./*[not(self::a:num)]" />
+    </section>
+  </xsl:template>
+
+  <xsl:template match="a:subsection[@type='code']">
+    <section class="akn-subsection">
+      <xsl:text>§ </xsl:text>
+      <xsl:value-of select="a:num" />
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
   </xsl:template>
@@ -282,6 +296,21 @@
 
   <xsl:template match="a:eol">
     <xsl:element name="br" />
+  </xsl:template>
+
+  <!-- Helper template to render the number of a given law hierarchy unit, including characters
+       in superscript, if needed. Assumes that the number to render is in AKN <num> tag and
+       that if there's a superscript to render, it will be after a "^" character. -->
+  <xsl:template name="number-with-superscript">
+    <!-- No regexes in XSLT 1.0 :( -->
+    <xsl:if test="contains(a:num, '^')">
+      <xsl:value-of select="substring-before(a:num, '^')"/>
+      <sup><xsl:value-of select="substring-after(a:num, '^')"/></sup>
+    </xsl:if>
+    <xsl:if test="not(contains(a:num, '^'))">
+      <xsl:value-of select="a:num"/>
+    </xsl:if>
+    <xsl:text>.</xsl:text>
   </xsl:template>
 
 </xsl:stylesheet>

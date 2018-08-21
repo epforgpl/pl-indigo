@@ -20,6 +20,10 @@ To run tests on your code, use:
 
     pipenv run python manage.py test
 
+To run one test, use:
+
+    pipenv run python manage.py test indigo_pl.tests.test_importer_pl.ImporterPLTestCase.test_reformat_text_simple
+
 # Updating your Indigo dependency
 
 If you need to update you Indigo version to a certain commit in the [Indigo repo](https://github.com/OpenUpSA/indigo):
