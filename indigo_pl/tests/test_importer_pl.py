@@ -425,7 +425,7 @@ class ImporterPLTestCase(testcases.TestCase):
         line3 = u"2) at work if:"
         line4 =    u"a) coworkers are happy with it, or"
         line5 =    u"b) boss is happy with it, he is in"
-        line6 =       u"a good mood, and:"
+        line6 =       u"a good mood, and:    " # Note testing trailing whitespace here.
         line7 =       u"– he is not vegetarian, at least"
         line8 =         u"not today"
         line9 =       u"– he likes you"
@@ -448,7 +448,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"1) at home\n"
                      + u"2) at work if:\n"
                      + u"a) coworkers are happy with it, or\n"
-                     + u"b) boss is happy with it, he is in a good mood, and:\n"
+                     + u"b) boss is happy with it, he is in a good mood, and:    \n"
                      + u"@@INDENT2@@– he is not vegetarian, at least not today\n"
                      + u"@@INDENT2@@– he likes you"
                      + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)

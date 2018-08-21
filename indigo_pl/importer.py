@@ -369,14 +369,15 @@ class ImporterPL(Importer):
                 return True
         if current_indent_level == 2:
             join = True
-            if (re.match('.*:$', last_node.get_text())):
+            if (re.match('.*:\s*$', last_node.get_text())):
                 join = False
             if (last_indent_level == 3):
                 join = False
             if (last_indent_level == 2) and (re.match(self.DASH_PREFIX_WITH_INDENT, last_line)):
                 join = False
             return join
-        # TODO: Add indent levels higher than 2.
+        if current_indent_level == 3: # TODO: Add indent levels higher than 2 for real.
+            return True
         return False
 
     def add_newline_if_level0_unit_starts_with_level1_unit(self, xml):

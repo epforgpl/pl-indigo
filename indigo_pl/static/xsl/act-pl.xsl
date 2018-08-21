@@ -137,7 +137,7 @@
     <section class="akn-subsection">
       <xsl:if test="a:num != ''">
         <xsl:value-of select="a:num"/>
-        <xsl:text> </xsl:text>
+        <xsl:text>. </xsl:text>
       </xsl:if>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
@@ -147,6 +147,7 @@
     <section class="akn-subsection">
       <xsl:text>§ </xsl:text>
       <xsl:value-of select="a:num" />
+      <xsl:text>. </xsl:text>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
   </xsl:template>
@@ -159,10 +160,10 @@
       </div>
       <xsl:apply-templates select="./a:content/a:p"/>
     </div>
-  </xsl:template>
+  </xsl:template>  
 
   <!-- for general block elements, generate a div -->
-  <xsl:template match="a:intro | a:point | a:paragraph | a:alinea | a:subparagraph | a:list">
+  <xsl:template match="a:intro | a:point | a:paragraph | a:alinea | a:subparagraph | a:list | a:wrapUp">
     <div class="akn-{local-name()}">
       <xsl:apply-templates select="@*" />
       <xsl:apply-templates />
