@@ -183,7 +183,7 @@
   </xsl:template>
 
   <!-- for general block elements, generate a div -->
-  <xsl:template match="a:intro | a:point | a:paragraph | a:alinea | a:subparagraph | a:list | a:wrapUp">
+  <xsl:template match="a:intro | a:point | a:paragraph | a:subparagraph | a:list | a:wrapUp">
     <div class="akn-{local-name()}">
       <xsl:apply-templates select="@*" />
       <xsl:apply-templates />
