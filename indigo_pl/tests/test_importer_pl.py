@@ -453,4 +453,237 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"@@INDENT2@@– he likes you"
                      + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
 
+    def test_reformat_text_dont_join_double_tirets_at_indent3_oneline(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is not:"
+        line8 =         u"– – vegetarian"
+        line9 =         u"– – on a diet"
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is not:\n"
+                    + u"@@INDENT3@@– – vegetarian\n"
+                    + u"@@INDENT3@@– – on a diet"
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+
+    def test_reformat_text_dont_join_double_tirets_at_indent3_multiline1(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is"
+        line8 =         u"not:"
+        line9 =         u"– – vegetarian"
+        line10 =        u"– – on a diet"
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 230) + u"\n"
+            + make_tag(line10, top = 190, left = 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is not:\n"
+                    + u"@@INDENT3@@– – vegetarian\n"
+                    + u"@@INDENT3@@– – on a diet"                     
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+
+    def test_reformat_text_dont_join_double_tirets_at_indent3_multiline2(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is"
+        line8 =         u"– not:" # Note the dash here.
+        line9 =         u"– – vegetarian"
+        line10 =        u"– – on a diet"
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 230) + u"\n"
+            + make_tag(line10, top = 190, left = 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is – not:\n"
+                    + u"@@INDENT3@@– – vegetarian\n"
+                    + u"@@INDENT3@@– – on a diet"                     
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+
+    def test_reformat_text_dont_join_double_tirets_at_indent3_multiline3(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is not:"
+        line8 =         u"– – on"
+        line9 =             u"a diet"
+        line10 =        u"– – vegetarian"
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 240) + u"\n"
+            + make_tag(line10, top = 190, left = 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is not:\n"
+                    + u"@@INDENT3@@– – on a diet\n"
+                    + u"@@INDENT3@@– – vegetarian"                    
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+
+    def test_reformat_text_dont_join_double_tirets_at_indent3_multiline4(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is not:"
+        line8 =         u"– – on"
+        line9 =             u"– a diet" # Note the dash here.
+        line10 =        u"– – vegetarian"
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 240) + u"\n"
+            + make_tag(line10, top = 190, left = 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is not:\n"
+                    + u"@@INDENT3@@– – on – a diet\n"
+                    + u"@@INDENT3@@– – vegetarian"                    
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+
+    def test_reformat_text_dont_join_triple_tirets_at_indent4_oneline(self):
+        line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
+        line2 = u"1) at home"
+        line3 = u"2) at work if:"
+        line4 =    u"a) coworkers are happy with it, or"
+        line5 =    u"b) boss is happy with it, and:"
+        line6 =       u"– he likes you"
+        line7 =       u"– he is not:"
+        line8 =         u"– – vegetarian"
+        line9 =         u"– – on:"
+        line10 =            u"– – – a diet"
+        line11 =            u"– – – sausage fast"        
+        reformatted = self.importer.reformat_text(
+            make_tag(line1, top = 100, left = 210) + u"\n"
+            + make_tag(line2, top = 110, left = 200) + u"\n"
+            + make_tag(line3, top = 120, left = 200) + u"\n"
+            + make_tag(line4, top = 130, left = 210) + u"\n"
+            + make_tag(line5, top = 140, left = 210) + u"\n"
+            + make_tag(line6, top = 150, left = 220) + u"\n"
+            + make_tag(line7, top = 160, left = 220) + u"\n"
+            + make_tag(line8, top = 170, left = 230) + u"\n"
+            + make_tag(line9, top = 180, left = 230) + u"\n"
+            + make_tag(line10, top = 190, left = 240) + u"\n"
+            + make_tag(line11, top = 200, left = 240) + u"\n"
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
+            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+        assert_equal(reformatted,
+                    u"Art. 123. The right to consume sausages shall not be abrogated:\n"
+                    + u"1) at home\n"
+                    + u"2) at work if:\n"
+                    + u"a) coworkers are happy with it, or\n"
+                    + u"b) boss is happy with it, and:\n"
+                    + u"@@INDENT2@@– he likes you\n"
+                    + u"@@INDENT2@@– he is not:\n"
+                    + u"@@INDENT3@@– – vegetarian\n"
+                    + u"@@INDENT3@@– – on:\n"
+                    + u"@@INDENT4@@– – – a diet\n"
+                    + u"@@INDENT4@@– – – sausage fast"
+                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+
         # TODO: A few more test cases could be added.

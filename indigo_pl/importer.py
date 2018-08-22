@@ -54,6 +54,12 @@ class ImporterPL(Importer):
 
     DASH_PREFIX_WITH_INDENT = INDENT_REGEX + ur"– "
     """Regex catching line starts with dashes, with indent info prepended."""
+    
+    DOUBLE_TIRET_PREFIX_WITH_INDENT = u"^@@INDENT3@@–\s+–\s+"
+    """Regex catching line starts for double tirets, with indent info prepended."""
+
+    TRIPLE_TIRET_PREFIX_WITH_INDENT = u"^@@INDENT4@@–\s+–\s+–\s+"
+    """Regex catching line starts for triple tirets, with indent info prepended."""
 
     INDENT_LEVEL_FREQUENCY_THRESHOLD = 5
     """How many times a given indentation must occur in PDF so that we assume it's one of the
@@ -376,8 +382,10 @@ class ImporterPL(Importer):
             if (last_indent_level == 2) and (re.match(self.DASH_PREFIX_WITH_INDENT, last_line)):
                 join = False
             return join
-        if current_indent_level == 3: # TODO: Add indent levels higher than 2 for real.
-            return True
+        if current_indent_level == 3:
+            return not re.match(self.DOUBLE_TIRET_PREFIX_WITH_INDENT, node.get_text())
+        if current_indent_level == 4:
+            return not re.match(self.TRIPLE_TIRET_PREFIX_WITH_INDENT, node.get_text())
         return False
 
     def add_newline_if_level0_unit_starts_with_level1_unit(self, xml):

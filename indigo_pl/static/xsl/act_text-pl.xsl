@@ -108,9 +108,21 @@
     <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
   </xsl:template>
 
-  <xsl:template match="a:indent">
+  <xsl:template match="a:indent[@type='single']">
     <xsl:value-of select="a:num" />
     <xsl:text>- </xsl:text>
+    <xsl:apply-templates select="./*[not(self::a:num)]" />
+  </xsl:template>
+
+  <xsl:template match="a:indent[@type='double']">
+    <xsl:value-of select="a:num" />
+    <xsl:text>- - </xsl:text>
+    <xsl:apply-templates select="./*[not(self::a:num)]" />
+  </xsl:template>
+
+  <xsl:template match="a:indent[@type='triple']">
+    <xsl:value-of select="a:num" />
+    <xsl:text>- - - </xsl:text>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
   </xsl:template>
 

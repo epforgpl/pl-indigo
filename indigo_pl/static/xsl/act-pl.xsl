@@ -152,7 +152,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:indent">
+  <xsl:template match="a:indent[@type='single']">
     <div class="akn-indent">
       <xsl:apply-templates select="@*" />
       <div class="akn-indent-num">
@@ -160,7 +160,27 @@
       </div>
       <xsl:apply-templates select="./a:content/a:p"/>
     </div>
-  </xsl:template>  
+  </xsl:template>
+
+  <xsl:template match="a:indent[@type='double']">
+    <div class="akn-indent">
+      <xsl:apply-templates select="@*" />
+      <div class="akn-indent-num">
+        <xsl:text>– – </xsl:text>
+      </div>
+      <xsl:apply-templates select="./a:content/a:p"/>
+    </div>
+  </xsl:template>
+
+  <xsl:template match="a:indent[@type='triple']">
+    <div class="akn-indent">
+      <xsl:apply-templates select="@*" />
+      <div class="akn-indent-num">
+        <xsl:text>– – – </xsl:text>
+      </div>
+      <xsl:apply-templates select="./a:content/a:p"/>
+    </div>
+  </xsl:template>
 
   <!-- for general block elements, generate a div -->
   <xsl:template match="a:intro | a:point | a:paragraph | a:alinea | a:subparagraph | a:list | a:wrapUp">
