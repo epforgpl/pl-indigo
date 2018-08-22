@@ -113,7 +113,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:section[@lawtype='statute']">
+  <xsl:template match="a:section[@refersTo='statute']">
     <section class="akn-section">
       <h3>
         <xsl:text>Art. </xsl:text>
@@ -123,7 +123,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:section[@lawtype='ordinance']">
+  <xsl:template match="a:section[@refersTo='ordinance']">
     <section class="akn-section">
       <h3>
         <xsl:text>§ </xsl:text>
@@ -133,7 +133,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:subsection[@type='noncode']">
+  <xsl:template match="a:subsection[@refersTo='noncode_level1_unit']">
     <section class="akn-subsection">
       <xsl:if test="a:num != ''">
         <xsl:value-of select="a:num"/>
@@ -143,7 +143,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:subsection[@type='code']">
+  <xsl:template match="a:subsection[@refersTo='code_level1_unit']">
     <section class="akn-subsection">
       <xsl:text>§ </xsl:text>
       <xsl:value-of select="a:num" />
@@ -152,7 +152,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='single']">
+  <xsl:template match="a:indent[@refersTo='single_tiret']">
     <div class="akn-indent">
       <xsl:apply-templates select="@*" />
       <div class="akn-indent-num">
@@ -162,7 +162,7 @@
     </div>
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='double']">
+  <xsl:template match="a:indent[@refersTo='double_tiret']">
     <div class="akn-indent">
       <xsl:apply-templates select="@*" />
       <div class="akn-indent-num">
@@ -172,7 +172,7 @@
     </div>
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='triple']">
+  <xsl:template match="a:indent[@refersTo='triple_tiret']">
     <div class="akn-indent">
       <xsl:apply-templates select="@*" />
       <div class="akn-indent-num">

@@ -108,19 +108,19 @@
     <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='single']">
+  <xsl:template match="a:indent[@refersTo='single_tiret']">
     <xsl:value-of select="a:num" />
     <xsl:text>- </xsl:text>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='double']">
+  <xsl:template match="a:indent[@refersTo='double_tiret']">
     <xsl:value-of select="a:num" />
     <xsl:text>- - </xsl:text>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
   </xsl:template>
 
-  <xsl:template match="a:indent[@type='triple']">
+  <xsl:template match="a:indent[@refersTo='triple_tiret']">
     <xsl:value-of select="a:num" />
     <xsl:text>- - - </xsl:text>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
