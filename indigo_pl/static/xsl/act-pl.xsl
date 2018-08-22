@@ -13,6 +13,12 @@
   <!-- 3-letter language code of document -->
   <xsl:param name="lang" />
 
+
+
+  <!-- ################ -->
+  <!-- MAJOR CONTAINERS -->
+  <!-- ################ -->
+
   <xsl:template match="a:act">
     <xsl:element name="article" namespace="">
       <xsl:attribute name="class">akn-act</xsl:attribute>
@@ -23,45 +29,6 @@
       <xsl:apply-templates select="a:body" />
       <xsl:apply-templates select="a:conclusions" />
     </xsl:element>
-  </xsl:template>
-
-  <!-- helper to build an id attribute with an arbitrary value, scoped to the containing doc (if necessary) -->
-  <xsl:template name="scoped-id">
-    <xsl:param name="id" select="." />
-
-    <xsl:attribute name="id">
-      <!-- scope the id to the containing doc, if any, using a default if provided -->
-      <xsl:variable name="prefix" select="./ancestor::a:doc[@name][1]/@name"/>
-      <xsl:choose>
-        <xsl:when test="$prefix != ''">
-          <xsl:value-of select="concat($prefix, '/')" />
-        </xsl:when>
-        <xsl:when test="$defaultIdScope != ''">
-          <xsl:value-of select="concat($defaultIdScope, '/')" />
-        </xsl:when>
-      </xsl:choose>
-
-      <xsl:value-of select="$id" />
-    </xsl:attribute>
-  </xsl:template>
-
-  <!-- id attribute is scoped if necessary, and the original saved as data-id -->
-  <xsl:template match="@id">
-    <xsl:call-template name="scoped-id">
-      <xsl:with-param name="id" select="." />
-    </xsl:call-template>
-
-    <xsl:attribute name="data-id">
-      <xsl:value-of select="." />
-    </xsl:attribute>
-  </xsl:template>
-
-  <!-- copy over attributes using a data- prefix, except for 'id' which is prefixed if necessary as-is -->
-  <xsl:template match="@*">
-    <xsl:variable name="attName" select="concat('data-', local-name(.))"/>
-    <xsl:attribute name="{$attName}">
-      <xsl:value-of select="." />
-    </xsl:attribute>
   </xsl:template>
 
   <!-- for parts and chapters, include an easily stylable heading -->
@@ -189,7 +156,52 @@
       <xsl:apply-templates />
     </div>
   </xsl:template>
-  
+
+
+
+  <!-- ############ -->
+  <!-- OTHER THINGS -->
+  <!-- ############ -->
+
+  <!-- helper to build an id attribute with an arbitrary value, scoped to the containing doc (if necessary) -->
+  <xsl:template name="scoped-id">
+    <xsl:param name="id" select="." />
+
+    <xsl:attribute name="id">
+      <!-- scope the id to the containing doc, if any, using a default if provided -->
+      <xsl:variable name="prefix" select="./ancestor::a:doc[@name][1]/@name"/>
+      <xsl:choose>
+        <xsl:when test="$prefix != ''">
+          <xsl:value-of select="concat($prefix, '/')" />
+        </xsl:when>
+        <xsl:when test="$defaultIdScope != ''">
+          <xsl:value-of select="concat($defaultIdScope, '/')" />
+        </xsl:when>
+      </xsl:choose>
+
+      <xsl:value-of select="$id" />
+    </xsl:attribute>
+  </xsl:template>
+
+  <!-- id attribute is scoped if necessary, and the original saved as data-id -->
+  <xsl:template match="@id">
+    <xsl:call-template name="scoped-id">
+      <xsl:with-param name="id" select="." />
+    </xsl:call-template>
+
+    <xsl:attribute name="data-id">
+      <xsl:value-of select="." />
+    </xsl:attribute>
+  </xsl:template>
+
+  <!-- copy over attributes using a data- prefix, except for 'id' which is prefixed if necessary as-is -->
+  <xsl:template match="@*">
+    <xsl:variable name="attName" select="concat('data-', local-name(.))"/>
+    <xsl:attribute name="{$attName}">
+      <xsl:value-of select="." />
+    </xsl:attribute>
+  </xsl:template>
+
   <!-- components/schedules -->
   <xsl:template match="a:doc">
     <!-- a:doc doesn't an id, so add one -->
