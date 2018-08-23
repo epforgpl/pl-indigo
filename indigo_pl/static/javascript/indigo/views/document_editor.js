@@ -151,8 +151,7 @@
         // show the text editor
         self.$('.document-content-view').addClass('show-text-editor');
 
-        # This bit added b/c for Polish tag names don't correspond to Treetop rules for
-        # parsing.
+        // This bit added b/c for Polish tag names don't correspond to Treetop rules for parsing.
         var fragmentToSend = self.fragment.tagName;
         if (fragmentToSend == 'section') {
           if (self.refersTo == 'statute') {
