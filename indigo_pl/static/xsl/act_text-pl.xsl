@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
+
+<!-- ################################################################ -->
+<!-- THIS FILE IS USED TO RENDER PLAINTEXT E.G. IN THE QUICK EDIT BOX -->
+<!-- ################################################################ -->
+  
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:a="http://www.akomantoso.org/2.0"
   exclude-result-prefixes="a">
@@ -52,17 +57,15 @@
 
   <xsl:template match="a:preface">
     <xsl:text>PREFACE</xsl:text>
-    <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates />
   </xsl:template>
 
   <xsl:template match="a:preamble">
     <xsl:text>PREAMBLE</xsl:text>
-    <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates />
   </xsl:template>
 
@@ -71,9 +74,8 @@
     <xsl:value-of select="./a:num" />
     <xsl:text> - </xsl:text>
     <xsl:value-of select="./a:heading" />
-    <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
   </xsl:template>
 
@@ -82,30 +84,42 @@
     <xsl:value-of select="./a:num" />
     <xsl:text> - </xsl:text>
     <xsl:value-of select="./a:heading" />
-    <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
   </xsl:template>
 
-  <xsl:template match="a:article">
+  <xsl:template match="a:section[@refersTo='statute']">
     <xsl:text>Art. </xsl:text>
     <xsl:value-of select="a:num" />
-    <xsl:text>
-
-</xsl:text>
+    <xsl:text>.</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
   </xsl:template>
 
-  <xsl:template match="a:section">
+  <xsl:template match="a:section[@refersTo='ordinance']">
     <xsl:text>§ </xsl:text>
     <xsl:value-of select="a:num" />
-    <xsl:text>
-
-</xsl:text>
+    <xsl:text>.</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates select="./*[not(self::a:num)]" />
   </xsl:template>
   
+  <xsl:template match="a:subsection[@refersTo='noncode_level1_unit']">
+    <xsl:value-of select="a:num" />
+    <xsl:text>. </xsl:text>
+    <xsl:apply-templates select="./*[not(self::a:num)]" />
+  </xsl:template>
+
+  <xsl:template match="a:subsection[@refersTo='code_level1_unit']">
+    <xsl:text>§ </xsl:text>
+    <xsl:value-of select="a:num" />
+    <xsl:text>. </xsl:text>
+    <xsl:apply-templates select="./*[not(self::a:num)]" />
+  </xsl:template>
+
   <xsl:template match="a:paragraph">
     <xsl:if test="a:num != ''">
       <xsl:value-of select="a:num" />
@@ -117,9 +131,8 @@
   <xsl:template match="a:list">
     <xsl:if test="a:intro != ''">
       <xsl:value-of select="a:intro" />
-      <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     </xsl:if>
     <xsl:apply-templates select="./*[not(self::a:intro)]" />
   </xsl:template>
@@ -165,9 +178,8 @@
   <xsl:template match="a:p">
     <xsl:apply-templates/>
     <!-- p tags must end with a newline -->
-    <xsl:text>
-
-</xsl:text>
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
   </xsl:template>
 
   <!-- first text nodes of these elems must be escaped if they have special chars -->
@@ -183,14 +195,12 @@
     <xsl:value-of select="a:meta/a:identification/a:FRBRWork/a:FRBRalias/@value" />
 
     <xsl:if test="a:mainBody/a:article/a:heading">
-      <xsl:text>
-</xsl:text>
+      <xsl:call-template name="newline"/>
       <xsl:value-of select="a:mainBody/a:article/a:heading" />
     </xsl:if>
-
-    <xsl:text>
-
-</xsl:text>
+    
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
     <xsl:apply-templates select="a:mainBody" />
   </xsl:template>
 
@@ -281,14 +291,18 @@
   </xsl:template>
 
   <xsl:template match="a:eol">
-    <xsl:text>
-</xsl:text>
+    <xsl:call-template name="newline"/>
   </xsl:template>
-
 
   <!-- for most nodes, just dump their text content -->
   <xsl:template match="*">
     <xsl:text/><xsl:apply-templates /><xsl:text/>
+  </xsl:template>
+  
+  <!-- Helper template to avoid unindented </xsl:text> tags, making the file hard to read. -->
+  <xsl:template name="newline">
+    <xsl:text>
+</xsl:text>
   </xsl:template>
   
 </xsl:stylesheet>

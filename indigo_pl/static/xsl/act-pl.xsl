@@ -1,4 +1,9 @@
 <?xml version="1.0"?>
+
+<!-- ############################################################## -->
+<!-- THIS FILE IS USED TO RENDER HTML SEEN IN THE MAIN INDIGO PANEL -->
+<!-- ############################################################## -->
+
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0"
   xmlns:a="http://www.akomantoso.org/2.0"
   exclude-result-prefixes="a">
