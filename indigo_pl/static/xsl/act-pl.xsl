@@ -163,6 +163,38 @@
   <!-- OTHER THINGS -->
   <!-- ############ -->
 
+  <xsl:template match="a:docNumber">
+    <h3 class="akn-{local-name()} text-center">
+      <xsl:apply-templates select="@*" />
+      <xsl:apply-templates />
+    </h3>
+    <br/><br/>
+  </xsl:template>
+
+  <xsl:template match="a:docType">
+    <h1 class="akn-{local-name()} text-center">
+      <xsl:choose>
+        <xsl:when test=". = 'statute'"><xsl:text>USTAWA</xsl:text></xsl:when>
+        <xsl:when test=". = 'ordinance'"><xsl:text>ROZPORZĄDZENIE</xsl:text></xsl:when>
+        <xsl:otherwise><xsl:text>ERROR</xsl:text></xsl:otherwise>
+      </xsl:choose>
+    </h1>
+  </xsl:template>
+  
+  <xsl:template match="a:docDate">
+    <h1 class="akn-{local-name()} text-center">
+      <xsl:apply-templates select="@*" />
+      <xsl:apply-templates />
+    </h1>
+  </xsl:template>
+
+  <xsl:template match="a:docTitle">
+    <h1 class="akn-{local-name()} text-center">
+      <xsl:apply-templates select="@*" />
+      <xsl:apply-templates />
+    </h1>
+  </xsl:template>
+
   <!-- helper to build an id attribute with an arbitrary value, scoped to the containing doc (if necessary) -->
   <xsl:template name="scoped-id">
     <xsl:param name="id" select="." />
@@ -232,6 +264,7 @@
 
       <xsl:apply-templates select="@*" />
       <xsl:apply-templates />
+      <br/><br/>
     </section>
   </xsl:template>
 

@@ -33,6 +33,9 @@ class ImporterPL(Importer):
 
     FOOTER_START_OFFSET = 1060
     """How far from top of page we assume footer is starting."""
+    
+    SIGNATURE_REGEX = '^\s*(Dz\.U\.|M\.P\.)\s+\d{4}\s+(Nr\s+\d+\s+)?poz\.\s+\d+\s*$'
+    """Regex catching line containing only the law signature, e.g. "Dz.U. 2018 poz. 1234"."""
 
     LEVEL0_PREFIX_REGEX = ur"(?:Art.|§)\s+\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
     """Regex catching line starts for level 0 law hierarchy units."""
@@ -60,16 +63,18 @@ class ImporterPL(Importer):
 
     TRIPLE_TIRET_PREFIX_WITH_INDENT = u"^@@INDENT4@@–\s+–\s+–\s+"
     """Regex catching line starts for triple tirets, with indent info prepended."""
-
-    INDENT_LEVEL_FREQUENCY_THRESHOLD = 5
-    """How many times a given indentation must occur in PDF so that we assume it's one of the
-    indentation levels, and not just a bit of text that for whatever reason PDF separated out
-    into its own <text> tag. Example when this may happen is a line like this:
-    "This is an important law <this is in superscript>3)</this is in superscript>, which..."
-    Because of the fact that the string '3)' is in superscript (a footnote), the text on this
-    line is broken into three <text> tags: one containing "This is an important law", second "3)",
-    third ", which...". We don't want the start of ", which..." to be counted as an indentation
-    level.
+    
+    INDENT_LEVELS1 = [96, 130, 162, 189, 216, 248]
+    """Most common indent levels in unified Polish law PDFs.
+    
+    Getting these numbers from statute: "o usługach zaufania oraz identyfikacji elektronicznej". 
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20160001579/U/D20161579Lj.pdf
+    """
+    INDENT_LEVELS2 = [76, 111, 143, 170]
+    """The other option for indent levels in unified Polish law PDFs.
+    
+    Getting these numbers from statute: "o odnawialnych źródłach energii".
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20150000478/U/D20150478Lj.pdf
     """
 
     locale = ('pl', None, None)
@@ -101,9 +106,9 @@ class ImporterPL(Importer):
         Returns:
             str: Plain text containing the law.
         """
-        xml = BeautifulSoup(text)
+        xml = BeautifulSoup(text)          
         self.remove_header_and_footer(xml)
-        self.process_superscripts(xml)
+        self.process_superscripts(xml)        
         self.remove_footnotes(xml)
         self.add_indent_info_for_dashed_lines(xml)
         self.add_newline_if_level0_unit_starts_with_level1_unit(xml)
@@ -206,8 +211,8 @@ class ImporterPL(Importer):
             node.extract()
 
     def remove_footnotes(self, xml):
-        """Modify the passed in XML by searching for tags which have smaller font ("height"
-        attribute) than most tags in the document. Remove all such tags. This definitively
+        """Modify the passed in XML by searching for tags which both have smaller height and
+        different font than most tags in the document. Remove all such tags. This definitively
         removes footnotes.
 
         TODO: Check if we don't remove too much.
@@ -220,16 +225,29 @@ class ImporterPL(Importer):
         # Find the most commonly occurring height of text nodes. We'll assume this is
         # the height of the law text itself.
         heights = {}
+        fonts = {}
         for node in text_nodes:
-            if not node.has_attr("height"):
+            if not node.has_attr("height") or not node.has_attr("font"):
                 continue
             height = int(node["height"])
+            font = int(node["font"])
             heights[height] = ((heights[height] + 1) if heights.has_key(height) else 1)
+            fonts[font] = ((fonts[font] + 1) if fonts.has_key(font) else 1)
         most_common_height = max(heights, key = heights.get)
-
-        # Remove all text nodes whose height is lower than most_common_height.
+        most_common_font = max(fonts, key = fonts.get)
+        
+        # The signature line is usually both smaller and in different font, but we want to keep it. 
         for node in text_nodes:
-            if node.has_attr("height") and (int(node["height"]) < most_common_height):
+            if re.match(self.SIGNATURE_REGEX, node.get_text()):
+                node["height"] = most_common_height
+                break
+
+        # Remove all text nodes whose height & font are both different than most common values.
+        for node in text_nodes:
+            if (not node.has_attr("height")) or (not node.has_attr("font")):
+                continue
+            if ((int(node["height"]) != most_common_height) 
+                and (int(node["font"]) != most_common_font)):
                 node.extract()
 
     def add_indent_info_for_dashed_lines(self, xml):
@@ -297,8 +315,7 @@ class ImporterPL(Importer):
                 node.string = re.sub(r"^@@INDENT\d@@", "", node.get_text())
 
     def get_all_indent_levels(self, xml):
-        """Returns a list of all indent levels found in the PDF at least on 5 text nodes,
-        with ascending sort.
+        """Returns a list of all indent levels found in the PDF.
 
         Args:
             xml: The XML to operate on, as a list of tags.
@@ -316,19 +333,25 @@ class ImporterPL(Importer):
             last_seen_top = int(node["top"])
             left = int(node["left"])
             lefts[left] = ((lefts[left] + 1) if lefts.has_key(left) else 1)
-
-        # Filter out values found less than 5 times (hopefully that's a good number?)
-        lefts = {k: v for k, v in lefts.items() if v >= self.INDENT_LEVEL_FREQUENCY_THRESHOLD}        
+       
         # Sort by the "left" offset.
-        lefts = sorted(lefts.items(), key=lambda x: x[0])
-        # Return one-dimensional list of "left" attribute values for each indent level.
-        return [item[0] for item in lefts]
+        lefts = sorted(lefts.items(), key=lambda x: x[0])        
+        # Check which of the two options of indent levels we have.
+        lefts = [item[0] for item in lefts]
+        if (lefts[0] == 96):
+            return self.INDENT_LEVELS1
+        if (lefts[0] == 76):
+            return self.INDENT_LEVELS2
+        return None
 
     def get_indent_level(self, left, indents):
         """For a given value of "left" parameter of an XML node and list of increasing indent
         levels in a document, returns an indent level which matches the "left" param or None
-        if there isn't one. Note that matching has an error threshold of about 3 points - e.g.
-        "left" == 123 matches indent level at 125 points.
+        if there isn't one. Note that matching has an error threshold of about 13 points - e.g.
+        "left" == 123 matches indent level at 125 points. This is because there can be certain
+        variation in the PDFs, especially when a law changes another law and the other law is
+        quoted. 13 seems right because it's less than half of any interval between indent levels
+        (see INDENT_LEVELS1, INDENT_LEVELS2).
 
         Args:
             left: The value of the "left" attribute (offset from left edge of PDF page).
@@ -339,7 +362,7 @@ class ImporterPL(Importer):
         """
         idx = 0
         for indent in indents:
-            if ((left - 3) < indent) and ((left + 3) > indent):
+            if ((left - 13) < indent) and ((left + 13) > indent):
                 return idx
             idx = idx + 1
         return None

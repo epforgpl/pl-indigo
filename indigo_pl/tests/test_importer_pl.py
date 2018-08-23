@@ -5,25 +5,14 @@ from nose.tools import *  # noqa
 from django.test import testcases
 from indigo_pl.importer import ImporterPL
 
-def make_tag(text, top = 100, left = 100, height = 18, indent = 0):
+def make_tag(text, top = 100, left = ImporterPL.INDENT_LEVELS1[0], height = 18, font = 1):
     return (u"<text top='" + utfify(top) 
             + u"' left='" + utfify(left) 
-            + u"' height='" + utfify(height) 
-            + u"' indent='" + utfify(indent) + u"'>" + text + u"</text>")
+            + u"' height='" + utfify(height)
+            + u"' font='" + utfify(font) + u"'>" + text + u"</text>")
 
 def utfify(num):
     return str(num).encode("utf-8").decode("utf-8")
-
-def make_tags_for_indent_level(initial_top, left):
-    """Creates a number of <text> tags to add to test text, in order to have a certain indentation
-    level appear more than ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD times in the text. Only then
-    the parser will recognize it as a valid indentation level.
-    """
-    result = u""
-    for _ in range(ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD):
-        result = result + u"\n" + make_tag(u"X", initial_top, left)
-        initial_top = initial_top + 10
-    return result
 
 class ImporterPLTestCase(testcases.TestCase):
 
@@ -115,11 +104,11 @@ class ImporterPLTestCase(testcases.TestCase):
         text3 = u". Bla bla bla "
         after = u"Some other text"
         reformatted = self.importer.reformat_text(""
-            + make_tag(before, 90, 100, 18) # Previous line.
-            + make_tag(text1, 100, 100, 18)
-            + make_tag(text2, 99, 100, 12) # Note lower "top" and "height" attributes
-            + make_tag(text3, 100, 100, 18)
-            + make_tag(after, 110, 100, 18)) # Following line.
+            + make_tag(before, 90, ImporterPL.INDENT_LEVELS1[0], 18) # Previous line.
+            + make_tag(text1, 100, ImporterPL.INDENT_LEVELS1[0], 18)
+            + make_tag(text2, 99, ImporterPL.INDENT_LEVELS1[0], 12) # Note lower "top" and "height" attributes
+            + make_tag(text3, 100, ImporterPL.INDENT_LEVELS1[0], 18)
+            + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18)) # Following line.
         assert_equal(reformatted, before + text1 + ImporterPL.SUPERSCRIPT_START + text2 
                      + ImporterPL.SUPERSCRIPT_END + text3 + after)
 
@@ -131,12 +120,12 @@ class ImporterPLTestCase(testcases.TestCase):
         text5 = u"be abrogated "
         footnote = u"As promulgated by the Sausage Act of 1 April 1234"
         reformatted = self.importer.reformat_text(""
-            + make_tag(text1, 100, 100, 18)
-            + make_tag(text2, 110, 100, 18)
-            + make_tag(text3, 120, 100, 18)
-            + make_tag(text4, 130, 100, 18)
-            + make_tag(text5, 140, 100, 18)
-            + make_tag(footnote, 150, 100, 12)) # Note lower "height" attribute.
+            + make_tag(text1, top = 100, height = 18, font = 1)
+            + make_tag(text2, top = 110, height = 18, font = 1)
+            + make_tag(text3, top = 120, height = 18, font = 1)
+            + make_tag(text4, top = 130, height = 18, font = 1)
+            + make_tag(text5, top = 140, height = 18, font = 1)
+            + make_tag(footnote, top = 150, height = 12, font = 3)) # Different "height" & "font".
         assert_equal(reformatted, text1 + text2 + text3 + text4 + text5)
         
     def test_reformat_add_newline_if_level0_unit_starts_with_level1_unit_case_1(self):
@@ -165,95 +154,74 @@ class ImporterPLTestCase(testcases.TestCase):
         line1 =    u"Art. 123. The right to consume sausages"
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
-                     u"Art. 123. The right to consume sausages – it must never be abrogated."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     u"Art. 123. The right to consume sausages – it must never be abrogated.")
         
     def test_reformat_text_join_statute_level0_continuation_at_indent0_multiline(self):
         line1 =    u"Art. 123. The right to"
         line2 = u"consume sausages"
         line3 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
-                     u"Art. 123. The right to consume sausages – it must never be abrogated."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     u"Art. 123. The right to consume sausages – it must never be abrogated.")
 
     def test_reformat_text_join_ordinance_level0_continuation_at_indent0_oneline(self):
         line1 =    u"§ 123. The right to consume sausages"
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
-                     u"§ 123. The right to consume sausages – it must never be abrogated."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     u"§ 123. The right to consume sausages – it must never be abrogated.")
 
     def test_reformat_text_join_ordinance_level0_continuation_at_indent0_multiline(self):
         line1 =    u"§ 123. The right to"
         line2 = u"consume sausages"
         line3 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
-                     u"§ 123. The right to consume sausages – it must never be abrogated."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     u"§ 123. The right to consume sausages – it must never be abrogated.")
         
     def test_reformat_text_join_level0_and_level1_continuation_at_indent0(self):
         line1 =    u"Art. 123. 1. The right to consume sausages"
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
-                     u"Art. 123.\n1. The right to consume sausages – it must never be abrogated."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     u"Art. 123.\n1. The right to consume sausages – it must never be abrogated.")
 
     def test_reformat_text_join_noncode_point_continuation_at_indent0(self):
         line1 = u"1. The right to consume sausages shall not be abrogated."
         line2 = u"2. The right to consume chicken"
         line3 = u"– it must never be abrogated, too."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted,
                      u"1. The right to consume sausages shall not be abrogated.\n" 
-                     + u"2. The right to consume chicken – it must never be abrogated, too."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"2. The right to consume chicken – it must never be abrogated, too.")
 
     def test_reformat_text_join_code_point_continuation_at_indent0(self):
         line1 = u"§ 1. The right to consume sausages shall not be abrogated."
         line2 = u"§ 2. The right to consume chicken"
         line3 = u"– it must never be abrogated, too."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted, 
                      u"§ 1. The right to consume sausages shall not be abrogated.\n"
-                     + u"§ 2. The right to consume chicken – it must never be abrogated, too."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"§ 2. The right to consume chicken – it must never be abrogated, too.")
 
     def test_reformat_text_dont_join_explanatory_section_dash_at_indent0(self):
         line1 =    u"Art. 123. The right to consume sausages:"
@@ -261,18 +229,15 @@ class ImporterPLTestCase(testcases.TestCase):
         line3 = u"2) at work"
         line4 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 200)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[0]))
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages:\n"
                      + u"1) at home\n"
                      + u"2) at work\n"
-                     + u"@@INDENT0@@– it must never be abrogated."                     
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"@@INDENT0@@– it must never be abrogated.")
 
     def test_reformat_text_join_point_continuation_at_indent1_oneline(self):        
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -280,17 +245,14 @@ class ImporterPLTestCase(testcases.TestCase):
         line3 = u"2) at work if there is a special place and bla"
         line4 =    u"– and ble as well."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]))
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
-                     + u"2) at work if there is a special place and bla – and ble as well."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"2) at work if there is a special place and bla – and ble as well.")
 
     def test_reformat_text_join_point_continuation_at_indent1_multiline(self):        
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -299,18 +261,15 @@ class ImporterPLTestCase(testcases.TestCase):
         line4 =    u"and bla"
         line5 =    u"– and ble as well."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]))
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
-                     + u"2) at work if there is a special place and bla – and ble as well."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"2) at work if there is a special place and bla – and ble as well.")
 
     def test_reformat_text_dont_join_explanatory_section_dash_at_indent1(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -320,22 +279,19 @@ class ImporterPLTestCase(testcases.TestCase):
         line5 =    u"b) boss is happy with it"
         line6 =    u"– and it's lunch break as defined by workspace regulations."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[1]))
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
                      + u"2) at work if:\n"
                      + u"a) coworkers are happy with it, or\n"
                      + u"b) boss is happy with it\n"
-                     + u"@@INDENT1@@– and it's lunch break as defined by workspace regulations."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 2)
+                     + u"@@INDENT1@@– and it's lunch break as defined by workspace regulations.")
 
     def test_reformat_text_join_letter_continuation_at_indent2(self):        
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -344,20 +300,16 @@ class ImporterPLTestCase(testcases.TestCase):
         line4 =    u"a) coworkers are happy with it and bla"
         line5 =       u"– and ble as well."
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210) 
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[2]))
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
                      + u"2) at work if:\n"
-                     + u"a) coworkers are happy with it and bla – and ble as well."
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 3)
+                     + u"a) coworkers are happy with it and bla – and ble as well.")
         
     def test_reformat_text_dont_join_tirets_at_indent2_oneline(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -368,16 +320,13 @@ class ImporterPLTestCase(testcases.TestCase):
         line6 =       u"– he is not vegetarian"
         line7 =       u"– he likes you"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -385,8 +334,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"a) coworkers are happy with it, or\n"
                      + u"b) boss is happy with it, and:\n"
                      + u"@@INDENT2@@– he is not vegetarian\n"
-                     + u"@@INDENT2@@– he likes you"
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 3)
+                     + u"@@INDENT2@@– he likes you")
 
     def test_reformat_text_dont_join_tirets_at_indent2_multiline1(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -398,17 +346,14 @@ class ImporterPLTestCase(testcases.TestCase):
         line7 =       u"– he is not vegetarian"
         line8 =       u"– he likes you"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[2]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -416,8 +361,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"a) coworkers are happy with it, or\n"
                      + u"b) boss is happy with it, he is in a good mood, and:\n"
                      + u"@@INDENT2@@– he is not vegetarian\n"
-                     + u"@@INDENT2@@– he likes you"
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 3)
+                     + u"@@INDENT2@@– he likes you")
 
     def test_reformat_text_dont_join_tirets_at_indent2_multiline2(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -430,19 +374,15 @@ class ImporterPLTestCase(testcases.TestCase):
         line8 =         u"not today"
         line9 =       u"– he likes you"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 160, left = 230) + u"\n"
-            + make_tag(line9, top = 170, left = 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 160, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 170, left = ImporterPL.INDENT_LEVELS1[2]))
         assert_equal(reformatted, 
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -450,8 +390,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"a) coworkers are happy with it, or\n"
                      + u"b) boss is happy with it, he is in a good mood, and:    \n"
                      + u"@@INDENT2@@– he is not vegetarian, at least not today\n"
-                     + u"@@INDENT2@@– he likes you"
-                     + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+                     + u"@@INDENT2@@– he likes you")
 
     def test_reformat_text_dont_join_double_tirets_at_indent3_oneline(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -464,19 +403,15 @@ class ImporterPLTestCase(testcases.TestCase):
         line8 =         u"– – vegetarian"
         line9 =         u"– – on a diet"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -486,8 +421,7 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT2@@– he likes you\n"
                     + u"@@INDENT2@@– he is not:\n"
                     + u"@@INDENT3@@– – vegetarian\n"
-                    + u"@@INDENT3@@– – on a diet"
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+                    + u"@@INDENT3@@– – on a diet")
 
     def test_reformat_text_dont_join_double_tirets_at_indent3_multiline1(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -501,20 +435,16 @@ class ImporterPLTestCase(testcases.TestCase):
         line9 =         u"– – vegetarian"
         line10 =        u"– – on a diet"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 230) + u"\n"
-            + make_tag(line10, top = 190, left = 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -524,8 +454,7 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT2@@– he likes you\n"
                     + u"@@INDENT2@@– he is not:\n"
                     + u"@@INDENT3@@– – vegetarian\n"
-                    + u"@@INDENT3@@– – on a diet"                     
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+                    + u"@@INDENT3@@– – on a diet")
 
     def test_reformat_text_dont_join_double_tirets_at_indent3_multiline2(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -539,20 +468,16 @@ class ImporterPLTestCase(testcases.TestCase):
         line9 =         u"– – vegetarian"
         line10 =        u"– – on a diet"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 230) + u"\n"
-            + make_tag(line10, top = 190, left = 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -562,8 +487,7 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT2@@– he likes you\n"
                     + u"@@INDENT2@@– he is – not:\n"
                     + u"@@INDENT3@@– – vegetarian\n"
-                    + u"@@INDENT3@@– – on a diet"                     
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 4)
+                    + u"@@INDENT3@@– – on a diet")
 
     def test_reformat_text_dont_join_double_tirets_at_indent3_multiline3(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -577,21 +501,16 @@ class ImporterPLTestCase(testcases.TestCase):
         line9 =             u"a diet"
         line10 =        u"– – vegetarian"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 240) + u"\n"
-            + make_tag(line10, top = 190, left = 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -601,8 +520,7 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT2@@– he likes you\n"
                     + u"@@INDENT2@@– he is not:\n"
                     + u"@@INDENT3@@– – on a diet\n"
-                    + u"@@INDENT3@@– – vegetarian"                    
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+                    + u"@@INDENT3@@– – vegetarian")
 
     def test_reformat_text_dont_join_double_tirets_at_indent3_multiline4(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -616,21 +534,16 @@ class ImporterPLTestCase(testcases.TestCase):
         line9 =             u"– a diet" # Note the dash here.
         line10 =        u"– – vegetarian"
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 240) + u"\n"
-            + make_tag(line10, top = 190, left = 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -640,8 +553,7 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT2@@– he likes you\n"
                     + u"@@INDENT2@@– he is not:\n"
                     + u"@@INDENT3@@– – on – a diet\n"
-                    + u"@@INDENT3@@– – vegetarian"                    
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+                    + u"@@INDENT3@@– – vegetarian")
 
     def test_reformat_text_dont_join_triple_tirets_at_indent4_oneline(self):
         line1 =    u"Art. 123. The right to consume sausages shall not be abrogated:"
@@ -656,22 +568,17 @@ class ImporterPLTestCase(testcases.TestCase):
         line10 =            u"– – – a diet"
         line11 =            u"– – – sausage fast"        
         reformatted = self.importer.reformat_text(
-            make_tag(line1, top = 100, left = 210) + u"\n"
-            + make_tag(line2, top = 110, left = 200) + u"\n"
-            + make_tag(line3, top = 120, left = 200) + u"\n"
-            + make_tag(line4, top = 130, left = 210) + u"\n"
-            + make_tag(line5, top = 140, left = 210) + u"\n"
-            + make_tag(line6, top = 150, left = 220) + u"\n"
-            + make_tag(line7, top = 160, left = 220) + u"\n"
-            + make_tag(line8, top = 170, left = 230) + u"\n"
-            + make_tag(line9, top = 180, left = 230) + u"\n"
-            + make_tag(line10, top = 190, left = 240) + u"\n"
-            + make_tag(line11, top = 200, left = 240) + u"\n"
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 500, 240)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 400, 230)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 300, 220)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 200, 210)
-            + make_tags_for_indent_level(ImporterPL.FOOTER_START_OFFSET - 100, 200))
+            make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
+            + make_tag(line11, top = 200, left = ImporterPL.INDENT_LEVELS1[4]))
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -683,7 +590,6 @@ class ImporterPLTestCase(testcases.TestCase):
                     + u"@@INDENT3@@– – vegetarian\n"
                     + u"@@INDENT3@@– – on:\n"
                     + u"@@INDENT4@@– – – a diet\n"
-                    + u"@@INDENT4@@– – – sausage fast"
-                    + u" X" * ImporterPL.INDENT_LEVEL_FREQUENCY_THRESHOLD * 5)
+                    + u"@@INDENT4@@– – – sausage fast")
 
         # TODO: A few more test cases could be added.
