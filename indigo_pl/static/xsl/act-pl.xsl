@@ -82,6 +82,7 @@
 
   <xsl:template match="a:section[@refersTo='statute']">
     <section class="akn-section">
+      <xsl:apply-templates select="@*" />
       <h3>
         <xsl:text>Art. </xsl:text>
         <xsl:call-template name="number-with-superscript"/>
@@ -92,6 +93,7 @@
 
   <xsl:template match="a:section[@refersTo='ordinance']">
     <section class="akn-section">
+      <xsl:apply-templates select="@*" />
       <h3>
         <xsl:text>§ </xsl:text>
         <xsl:call-template name="number-with-superscript"/>
