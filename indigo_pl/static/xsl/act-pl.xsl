@@ -62,7 +62,6 @@
     </section>
   </xsl:template>
 
-  <!-- for parts and chapters, include an easily stylable heading -->
   <xsl:template match="a:division">
     <section class="akn-division">
       <xsl:apply-templates select="@*" />
@@ -76,11 +75,11 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:subdivision">
-    <section class="akn-subdivision">
+  <xsl:template match="a:chapter">
+    <section class="akn-chapter">
       <xsl:apply-templates select="@*" />
       <h2>
-        <xsl:text>Oddział </xsl:text>
+        <xsl:text>Rozdział </xsl:text>
         <xsl:value-of select="./a:num" />
         <br/>
         <xsl:value-of select="./a:heading" />
@@ -89,11 +88,11 @@
     </section>
   </xsl:template>
 
-  <xsl:template match="a:chapter">
-    <section class="akn-chapter">
+  <xsl:template match="a:subdivision">
+    <section class="akn-subdivision">
       <xsl:apply-templates select="@*" />
       <h2>
-        <xsl:text>Rozdział </xsl:text>
+        <xsl:text>Oddział </xsl:text>
         <xsl:value-of select="./a:num" />
         <br/>
         <xsl:value-of select="./a:heading" />
