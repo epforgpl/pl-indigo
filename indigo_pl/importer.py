@@ -21,6 +21,15 @@ class ImporterPL(Importer):
     See http://isap.sejm.gov.pl/isap.nsf/DocDetails.xsp?id=WDU20120001512 for an example law 
     with unified text - the PDF next to "Tekst ujednolicony:".
     """
+    
+    NO_FONTSIZE = -1
+    """Magic number to indicate that we couldn't find fontsize for the node that has it."""
+    
+    PAGE_NUM_MULTIPLIER = 100000
+    """We increase the "top" attribute of each <text> tag in the PDF by this number * page number
+    of page the tag is on. This way the attribute is monotonically increasing (at least for the
+    main law text itself - not necessarily for header, footer, footnotes).
+    """
 
     SUPERSCRIPT_START = "@@SUPERSCRIPT@@"
     """Special label placed in law plaintext before a superscript string."""
@@ -106,7 +115,14 @@ class ImporterPL(Importer):
         Returns:
             str: Plain text containing the law.
         """
-        xml = BeautifulSoup(text)          
+        xml = BeautifulSoup(text)
+        self.assert_good_xml(xml)
+        self.remove_empty_nodes(xml)
+        self.add_fontsize_to_nodes(xml)
+        self.make_top_attribute_monotonically_increasing(xml)        
+        self.add_line_nums_to_law_text(xml)
+        # TODO: Join <text> tags on the same line.
+        self.remove_obsolete_parts(xml)
         self.remove_header_and_footer(xml)
         self.process_superscripts(xml)        
         self.remove_footnotes(xml)
@@ -116,6 +132,131 @@ class ImporterPL(Importer):
         text = self.join_hyphenated_words(text)
         text = self.remove_linebreaks(text)
         return text
+    
+    def assert_good_xml(self, xml):
+        """Make sure all the text XML nodes have all the required attributes, so that we don't
+        have to check them later on.
+        
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        for page in xml.find_all("page"):
+            for node in page.find_all("text"):
+                if ((not node.has_attr("top")) or (not node.has_attr("height")) 
+                    or (not node.has_attr("font")) or (not node.has_attr("left"))):
+                    raise Exception("The following node on page [" + page["number"] 
+                                    + "] doesn't have all the expected attributes: \n" + str(node))
+
+    def remove_empty_nodes(self, xml):
+        """Remove the XML nodes containing nothing or whitespace.
+        
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        for node in xml.find_all("text"):
+            if re.match("^\s*$", node.get_text()):
+                node.extract()
+
+    def add_fontsize_to_nodes(self, xml):
+        """Add info about font size to XML nodes. It can be found in XML nodes called <fontspec>,
+        like this: <fontspec color="#000000" family="Times" id="0" size="10"></fontspec>. We
+        match <text font="12345"> nodes with <fontspec id="12345"> node and create a "fontsize"
+        attribute on the former.
+        
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        fonts_to_fontsizes = {}
+        for node in xml.find_all("fontspec"):
+            fonts_to_fontsizes[node["id"]] = node["size"]
+        for node in xml.find_all("text"):
+            node["fontsize"] = fonts_to_fontsizes.get(node["font"], self.NO_FONTSIZE)
+            
+    def make_top_attribute_monotonically_increasing(self, xml):
+        """Increase "top" attribute of <text> nodes by 
+        {page number <text> is on} * PAGE_NUM_MULTIPLIER. Then it'll be monotonically increasing.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        for page in xml.find_all("page"):
+            num = int(page["number"])
+            for node in page.find_all("text"):
+                node["top"] = int(node["top"]) + self.PAGE_NUM_MULTIPLIER * num       
+            
+    def add_line_nums_to_law_text(self, xml):
+        """For all <text> tags that represent parts of the law text, add a "line" attribute
+        saying which line number a given tag sits, counting from 1. Tags on the same line have
+        the same "top" attribute.
+              
+        We make these assumptions:
+        - Law text lines (as opposed e.g. to footnotes, headers, etc) have font size which is
+          the most commonly occurring in the PDF.
+        - PDF has the <text> tags corresponding to law text parts in such an order that the
+          attribute pair (top, left) monotonically increases with each tag. What I mean by 
+          increasing here is that EITHER of these two must increase with each new tag, and "top"
+          must never decrease ("left" may decrease as "top" increases - when moving to new line).
+          We ignore the lines that don't conform, assuming they are not the main law text.
+        - Increasing / comparisons of "top" has a tolerance of 2 points. I'm not sure if this
+          is needed, but just in case.
+          
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        most_common_fontsize = self.find_most_common_fontsize(xml)        
+        last_top = 0
+        line_num = 0
+        for node in xml.find_all("text"):            
+            if (int(node["fontsize"]) != most_common_fontsize):
+                continue
+            top = int(node["top"])
+            if (top - 2 < last_top) and (top + 2 > last_top):
+                node["line"] = line_num
+            elif (top > last_top):
+                last_top = top
+                line_num = line_num + 1
+                node["line"] = line_num
+            else:
+                raise Exception("Bad 'top' attribute: [" + top 
+                                + "] at node (last_top = [" + last_top + "]): \n" + str(node))
+            
+    def find_most_common_fontsize(self, xml):
+        """Returns the fontsize value that most of <text> nodes in the doc have.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+
+        Returns:
+            int: The font size value that most of <text> nodes have.
+        """
+        fontsizes = {}
+        for node in xml.find_all("text"):
+            fontsize = int(node["fontsize"])
+            fontsizes[fontsize] = ((fontsizes[fontsize] + 1) if fontsizes.has_key(fontsize) else 1)
+        most_common_fontsize = max(fontsizes, key = fontsizes.get)
+        if (most_common_fontsize == self.NO_FONTSIZE):
+            raise Exception("Most common fontsize in the PDF can't be the marker for no font size.")
+        return most_common_fontsize
+
+    def remove_obsolete_parts(self, xml):
+        """Removes <text> nodes containing parts of the law that are becoming soon obsolete.
+        In ISAP unified texts, when a given article, etc is changing on some future date, they
+        first print the current version in italics and inside '[ ... ]' markers, and immediately
+        after, they print the upcoming version in bold and inside '< ... >' markers.
+        
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        is_in_obsolete_part = False
+        for node in xml.find_all('text'):
+            i = node.find_all('i') # Find italics.
+            if (len(i) == 1) and (i[0].get_text() == node.get_text()):
+                if (re.match("^\s*\[", node.get_text())):
+                    is_in_obsolete_part = True
+                if (is_in_obsolete_part):
+                    if (re.match(".*\]\s*$", node.get_text())):
+                        is_in_obsolete_part = False
+                    node.extract()
 
     def remove_header_and_footer(self, xml):
         """Modify the passed in XML by removing tags laying outside the area we know to be
@@ -137,9 +278,10 @@ class ImporterPL(Importer):
         Returns:
             bool: True if tag is in header/footer, False otherwise.
         """
-        return ((tag.name == "text") and tag.has_attr("top")
-            and ((int(tag["top"]) <= self.HEADER_END_OFFSET) 
-                 or (int(tag["top"]) > self.FOOTER_START_OFFSET)))
+        divider = (self.PAGE_NUM_MULTIPLIER / 10)
+        return ((tag.name == "text")
+            and (((int(tag["top"]) % divider) <= self.HEADER_END_OFFSET) 
+                 or ((int(tag["top"]) % divider) > self.FOOTER_START_OFFSET)))
 
     def process_superscripts(self, xml):
         """Modify the passed in XML by searching for tags which represent superscript numbering and
@@ -179,11 +321,6 @@ class ImporterPL(Importer):
             if not node_plus_two_pattern.match(node_plus_two_txt):
                 continue
 
-            if ((not node.has_attr("height")) or (not node_plus_one.has_attr("height"))
-                    or (not node_plus_two.has_attr("height")) or (not node.has_attr("top"))
-                    or (not node_plus_one.has_attr("top")) or (not node_plus_two.has_attr("top"))):
-                continue
-
             # node and node_plus_two must have the same height.
             if int(node["height"]) != int(node_plus_two["height"]):
                 continue
@@ -211,43 +348,19 @@ class ImporterPL(Importer):
             node.extract()
 
     def remove_footnotes(self, xml):
-        """Modify the passed in XML by searching for tags which both have smaller height and
-        different font than most tags in the document. Remove all such tags. This definitively
-        removes footnotes.
+        """Modify the passed in XML by searching for tags which have font size different than 
+        the most common value. Remove all such tags. This definitively removes footnotes.
 
         TODO: Check if we don't remove too much.
 
         Args:
             xml: The XML to operate on, as a list of tags.
         """
-        text_nodes = xml.find_all('text')
+        most_common_fontsize = self.find_most_common_fontsize(xml)
 
-        # Find the most commonly occurring height of text nodes. We'll assume this is
-        # the height of the law text itself.
-        heights = {}
-        fonts = {}
-        for node in text_nodes:
-            if not node.has_attr("height") or not node.has_attr("font"):
-                continue
-            height = int(node["height"])
-            font = int(node["font"])
-            heights[height] = ((heights[height] + 1) if heights.has_key(height) else 1)
-            fonts[font] = ((fonts[font] + 1) if fonts.has_key(font) else 1)
-        most_common_height = max(heights, key = heights.get)
-        most_common_font = max(fonts, key = fonts.get)
-        
-        # The signature line is usually both smaller and in different font, but we want to keep it. 
-        for node in text_nodes:
-            if re.match(self.SIGNATURE_REGEX, node.get_text()):
-                node["height"] = most_common_height
-                break
-
-        # Remove all text nodes whose height & font are both different than most common values.
-        for node in text_nodes:
-            if (not node.has_attr("height")) or (not node.has_attr("font")):
-                continue
-            if ((int(node["height"]) != most_common_height) 
-                and (int(node["font"]) != most_common_font)):
+        # Remove all text nodes whose fontsize is different than most common value.
+        for node in xml.find_all('text'):
+            if (int(node["fontsize"]) != most_common_fontsize):
                 node.extract()
 
     def add_indent_info_for_dashed_lines(self, xml):
@@ -269,20 +382,9 @@ class ImporterPL(Importer):
             xml: The XML to operate on, as a list of tags.
         """
 
-        # Increase "top" attribute by 10000 for each page. Then it's monotonically increasing.
-        page_nodes = xml.find_all("page")
-        for page in page_nodes:
-            num = int(page["number"])
-            text_nodes = page.find_all("text")
-            for node in text_nodes:
-                if not node.has_attr("top"):
-                    continue
-                node["top"] = int(node["top"]) + 10000 * num
-
         # For each line, add its indent level.
         indent_levels = self.get_all_indent_levels(xml)
-        text_nodes = xml.find_all('text')
-        for node in text_nodes:
+        for node in xml.find_all('text'):
             left = int(node["left"])
             indent_level = self.get_indent_level(left, indent_levels)
             if not indent_level is None:
@@ -291,13 +393,12 @@ class ImporterPL(Importer):
 
         # Check all line starts. If they begin with a dash, and the dash is just in a running
         # piece of text (as opposed to e.g. a list of tirets, or explanatory section at the end
-        # of a list of points) - then move the dash to the line above.
-        text_nodes = xml.find_all("text")
+        # of a list of points) - then move the dash to the line above. 
         last_seen_top = 0
         last_line_start = None
         last_node = None
-        for node in text_nodes:
-            if node.has_attr("top") and (int(node["top"]) > last_seen_top):
+        for node in xml.find_all("text"):
+            if (int(node["top"]) > last_seen_top):
                 if ((not last_node is None) and (not last_line_start is None) 
                     and self.should_join_dash_line(node, last_node, last_line_start)):
                     # Moving the dash to the line above. Note that one trailing whitespace will be
@@ -308,9 +409,8 @@ class ImporterPL(Importer):
                 last_seen_top = int(node["top"])
             last_node = node
 
-        # Remove indent info for all lines except ones still starting with dash.
-        text_nodes = xml.find_all("text")
-        for node in text_nodes:
+        # Remove indent info for all lines except ones still starting with dash. 
+        for node in xml.find_all("text"):
             if not re.match(self.DASH_PREFIX_WITH_INDENT, node.get_text()):
                 node.string = re.sub(r"^@@INDENT\d@@", "", node.get_text())
 
@@ -328,7 +428,7 @@ class ImporterPL(Importer):
         last_seen_top = 0
         lefts = {}
         for node in xml.find_all('text'):
-            if not node.has_attr("top") or (int(node["top"]) <= last_seen_top):
+            if (int(node["top"]) <= last_seen_top):
                 continue
             last_seen_top = int(node["top"])
             left = int(node["left"])

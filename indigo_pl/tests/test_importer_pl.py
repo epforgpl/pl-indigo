@@ -2,6 +2,7 @@
 
 from nose.tools import *  # noqa
 
+from bs4 import BeautifulSoup
 from django.test import testcases
 from indigo_pl.importer import ImporterPL
 
@@ -10,6 +11,10 @@ def make_tag(text, top = 100, left = ImporterPL.INDENT_LEVELS1[0], height = 18, 
             + u"' left='" + utfify(left) 
             + u"' height='" + utfify(height)
             + u"' font='" + utfify(font) + u"'>" + text + u"</text>")
+    
+def make_fontspec_tag(font_id = 1, size = 18):
+    return (u"<fontspec id='" + utfify(font_id) 
+            + u"' size='" + utfify(size) + u"'></fontspec>")
 
 def utfify(num):
     return str(num).encode("utf-8").decode("utf-8")
@@ -22,55 +27,108 @@ class ImporterPLTestCase(testcases.TestCase):
     def test_reformat_text_simple(self):
         line1 = u"All your base are belong"
         line2 = u"to Legia Warszawa FC."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, "All your base are belong to Legia Warszawa FC.")
+        
+    def test_reformat_text_remove_empty_tag(self):
+        line1 = u"All your base are belong to Legia Warszawa FC."
+        line2 = u"      "
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
+        assert_equal(reformatted, "All your base are belong to Legia Warszawa FC. ")
+        
+    def test_reformat_text_add_fontsize(self):
+        line1 = u"All your base are belong to Legia Warszawa FC."
+        line2 = u"The right to consume sausages shall not be abrogated."
+        text = (make_tag(line1, font = 1) + u"\n" + make_tag(line2, font = 2) 
+                + make_fontspec_tag(font_id = 1, size = 123) 
+                + make_fontspec_tag(font_id = 2, size = 456))
+        xml = BeautifulSoup(text)
+        self.importer.add_fontsize_to_nodes(xml)
+        assert_equal(xml.prettify(), '' 
+                    + '<html>\n'
+                    + ' <body>\n'
+                    + '  <text font="1" fontsize="123" height="18" left="96" top="100">\n'
+                    + '   All your base are belong to Legia Warszawa FC.\n'
+                    + '  </text>\n'
+                    + '  <text font="2" fontsize="456" height="18" left="96" top="100">\n'
+                    + '   The right to consume sausages shall not be abrogated.\n'
+                    + '  </text>\n'
+                    + '  <fontspec id="1" size="123">\n'
+                    + '  </fontspec>\n'
+                    + '  <fontspec id="2" size="456">\n'
+                    + '  </fontspec>\n'
+                    + ' </body>\n'
+                    + '</html>')
+        
+    def test_reformat_text_remove_obsolete_parts(self):
+        line1 = u"<i>[All your base</i>"
+        line2 = u"<i>are belong to</i>"
+        line3 = u"<i>Legia Warszawa FC.]</i>"
+        line4 = u"The right to consume sausages shall not be abrogated."
+        reformatted = self.importer.reformat_text(u""
+            + make_tag(line1, top = 100) + u"\n" 
+            + make_tag(line2, top = 110) + u"\n"
+            + make_tag(line3, top = 120) + u"\n"
+            + make_tag(line4, top = 130) + u"\n"
+            + make_fontspec_tag())
+        assert_equal(reformatted, "   The right to consume sausages shall not be abrogated. ")
 
     def test_reformat_text_remove_hyphenation(self):
         line1 = u"All your base are be-"
         line2 = u"long to Legia Warszawa FC."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, "All your base are belong to Legia Warszawa FC.")
 
     def test_reformat_text_keep_linebreak_on_divisions(self):
         line1 = u"DZIAŁ VIII All your base are belong to Legia Warszawa FC."
         line2 = u"DZIAŁ IX The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_chapters(self):
         line1 = u"Rozdział 1 All your base are belong to Legia Warszawa FC."
         line2 = u"Rozdział 2 The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_statute_level0_units(self):
         line1 = u"Art. 1. All your base are belong to Legia Warszawa FC."
         line2 = u"Art. 2. The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_noncode_level1_units(self):
         line1 = u"1. All your base are belong to Legia Warszawa FC."
         line2 = u"2. The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_ordinance_level0_or_code_level1_units(self):
         line1 = u"§ 1. All your base are belong to Legia Warszawa FC."
         line2 = u"§ 2. The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_points(self):
         line1 = u"1) All your base are belong to Legia Warszawa FC."
         line2 = u"2) The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_on_letters(self):
         line1 = u"a) All your base are belong to Legia Warszawa FC."
         line2 = u"b) The right to consume sausages shall not be abrogated."
-        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2))
+        reformatted = self.importer.reformat_text(make_tag(line1) + u"\n" + make_tag(line2)
+                                                  + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2)
 
     def test_reformat_text_keep_linebreak_complex(self):
@@ -84,7 +142,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line2) + u"\n"
             + make_tag(line3) + u"\n"
             + make_tag(line4) + u"\n"
-            + make_tag(line5))
+            + make_tag(line5)
+            + make_fontspec_tag())
         assert_equal(reformatted, line1 + u"\n" + line2 + u"\n" + line3 + u"\n" + line4 + u"\n"
                      + line5)        
 
@@ -94,7 +153,8 @@ class ImporterPLTestCase(testcases.TestCase):
         footer_text = u"page 3/123"
         reformatted = self.importer.reformat_text(""
             + make_tag(header_text, ImporterPL.HEADER_END_OFFSET - 1)
-            + make_tag(text) + make_tag(footer_text, ImporterPL.FOOTER_START_OFFSET + 1))
+            + make_tag(text) + make_tag(footer_text, ImporterPL.FOOTER_START_OFFSET + 1)
+            + make_fontspec_tag())
         assert_equal(reformatted, text)
 
     def test_reformat_process_superscripts(self):
@@ -108,7 +168,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(text1, 100, ImporterPL.INDENT_LEVELS1[0], 18)
             + make_tag(text2, 99, ImporterPL.INDENT_LEVELS1[0], 12) # Note lower "top" and "height" attributes
             + make_tag(text3, 100, ImporterPL.INDENT_LEVELS1[0], 18)
-            + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18)) # Following line.
+            + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18)
+            + make_fontspec_tag()) # Following line.
         assert_equal(reformatted, before + text1 + ImporterPL.SUPERSCRIPT_START + text2 
                      + ImporterPL.SUPERSCRIPT_END + text3 + after)
 
@@ -125,27 +186,28 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(text3, top = 120, height = 18, font = 1)
             + make_tag(text4, top = 130, height = 18, font = 1)
             + make_tag(text5, top = 140, height = 18, font = 1)
-            + make_tag(footnote, top = 150, height = 12, font = 3)) # Different "height" & "font".
+            + make_tag(footnote, top = 150, height = 12, font = 3)
+            + make_fontspec_tag()) # Different "height" & "font".
         assert_equal(reformatted, text1 + text2 + text3 + text4 + text5)
         
     def test_reformat_add_newline_if_level0_unit_starts_with_level1_unit_case_1(self):
         line1 = u"Art. 123. 1. All your base are belong to Legia Warszawa FC."
-        reformatted = self.importer.reformat_text(make_tag(line1))
+        reformatted = self.importer.reformat_text(make_tag(line1) + make_fontspec_tag())
         assert_equal(reformatted, u"Art. 123.\n1. All your base are belong to Legia Warszawa FC.")
 
     def test_reformat_add_newline_if_level0_unit_starts_with_level1_unit_case_2(self):
         line1 = u"Art. 123. § 1. All your base are belong to Legia Warszawa FC."
-        reformatted = self.importer.reformat_text(make_tag(line1))
+        reformatted = self.importer.reformat_text(make_tag(line1) + make_fontspec_tag())
         assert_equal(reformatted, u"Art. 123.\n§ 1. All your base are belong to Legia Warszawa FC.")
 
     def test_reformat_add_newline_if_level0_unit_starts_with_level1_unit_case_3(self):
         line1 = u"§ 123. 1. All your base are belong to Legia Warszawa FC."
-        reformatted = self.importer.reformat_text(make_tag(line1))
+        reformatted = self.importer.reformat_text(make_tag(line1) + make_fontspec_tag())
         assert_equal(reformatted, u"§ 123.\n1. All your base are belong to Legia Warszawa FC.")
 
     def test_reformat_add_newline_if_level0_unit_starts_with_level1_unit_case_4(self):
         line1 = u"Art.    123.     1.    All your base are..."
-        reformatted = self.importer.reformat_text(make_tag(line1))
+        reformatted = self.importer.reformat_text(make_tag(line1) + make_fontspec_tag())
         assert_equal(reformatted, u"Art.    123.\n1.    All your base are...")
 
     # Start of tests for joining or not joining lines starting with a dash.
@@ -155,7 +217,8 @@ class ImporterPLTestCase(testcases.TestCase):
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"Art. 123. The right to consume sausages – it must never be abrogated.")
         
@@ -166,7 +229,8 @@ class ImporterPLTestCase(testcases.TestCase):
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"Art. 123. The right to consume sausages – it must never be abrogated.")
 
@@ -175,7 +239,8 @@ class ImporterPLTestCase(testcases.TestCase):
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"§ 123. The right to consume sausages – it must never be abrogated.")
 
@@ -186,7 +251,8 @@ class ImporterPLTestCase(testcases.TestCase):
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"§ 123. The right to consume sausages – it must never be abrogated.")
         
@@ -195,7 +261,8 @@ class ImporterPLTestCase(testcases.TestCase):
         line2 = u"– it must never be abrogated."
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"Art. 123.\n1. The right to consume sausages – it must never be abrogated.")
 
@@ -206,7 +273,8 @@ class ImporterPLTestCase(testcases.TestCase):
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"1. The right to consume sausages shall not be abrogated.\n" 
                      + u"2. The right to consume chicken – it must never be abrogated, too.")
@@ -218,7 +286,8 @@ class ImporterPLTestCase(testcases.TestCase):
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"§ 1. The right to consume sausages shall not be abrogated.\n"
                      + u"§ 2. The right to consume chicken – it must never be abrogated, too.")
@@ -232,7 +301,8 @@ class ImporterPLTestCase(testcases.TestCase):
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[0]))
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[0])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages:\n"
                      + u"1) at home\n"
@@ -248,7 +318,8 @@ class ImporterPLTestCase(testcases.TestCase):
             make_tag(line1, top = 100, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
-            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]))
+            + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -265,7 +336,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]))
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -284,7 +356,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[1]))
+            + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[1])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -304,7 +377,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line2, top = 110, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line3, top = 120, left = ImporterPL.INDENT_LEVELS1[0]) + u"\n"
             + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
-            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[2]))
+            + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[2])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -326,7 +400,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line4, top = 130, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
-            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]))
+            + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -353,7 +428,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line5, top = 140, left = ImporterPL.INDENT_LEVELS1[1]) + u"\n"
             + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
-            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[2]))
+            + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[2])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -382,7 +458,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 160, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
-            + make_tag(line9, top = 170, left = ImporterPL.INDENT_LEVELS1[2]))
+            + make_tag(line9, top = 170, left = ImporterPL.INDENT_LEVELS1[2])
+            + make_fontspec_tag())
         assert_equal(reformatted, 
                      u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                      + u"1) at home\n"
@@ -411,7 +488,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line6, top = 150, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
-            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]))
+            + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -444,7 +522,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
-            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -477,7 +556,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
-            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -510,7 +590,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
-            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -543,7 +624,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line7, top = 160, left = ImporterPL.INDENT_LEVELS1[2]) + u"\n"
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
-            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3]))
+            + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[3])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
@@ -578,7 +660,8 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line8, top = 170, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line9, top = 180, left = ImporterPL.INDENT_LEVELS1[3]) + u"\n"
             + make_tag(line10, top = 190, left = ImporterPL.INDENT_LEVELS1[4]) + u"\n"
-            + make_tag(line11, top = 200, left = ImporterPL.INDENT_LEVELS1[4]))
+            + make_tag(line11, top = 200, left = ImporterPL.INDENT_LEVELS1[4])
+            + make_fontspec_tag())
         assert_equal(reformatted,
                     u"Art. 123. The right to consume sausages shall not be abrogated:\n"
                     + u"1) at home\n"
