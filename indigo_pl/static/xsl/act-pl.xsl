@@ -36,6 +36,19 @@
     </xsl:element>
   </xsl:template>
 
+  <xsl:template match="a:book">
+    <section class="akn-book">
+      <xsl:apply-templates select="@*" />
+      <h2>
+        <xsl:text>KSIĘGA </xsl:text>
+        <xsl:value-of select="./a:num" />
+        <br/>
+        <xsl:value-of select="./a:heading" />
+      </h2>
+      <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
+    </section>
+  </xsl:template>
+
   <xsl:template match="a:title">
     <section class="akn-title">
       <xsl:apply-templates select="@*" />
@@ -45,7 +58,6 @@
         <br/>
         <xsl:value-of select="./a:heading" />
       </h2>
-      
       <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
     </section>
   </xsl:template>
@@ -60,7 +72,6 @@
         <br/>
         <xsl:value-of select="./a:heading" />
       </h2>
-      
       <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
     </section>
   </xsl:template>
@@ -74,7 +85,6 @@
         <br/>
         <xsl:value-of select="./a:heading" />
       </h2>
-      
       <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
     </section>
   </xsl:template>
@@ -88,7 +98,6 @@
         <br/>
         <xsl:value-of select="./a:heading" />
       </h2>
-      
       <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
     </section>
   </xsl:template>
