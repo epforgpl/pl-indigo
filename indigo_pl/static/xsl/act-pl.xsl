@@ -36,15 +36,26 @@
     </xsl:element>
   </xsl:template>
 
+  <xsl:template match="a:title">
+    <section class="akn-title">
+      <xsl:apply-templates select="@*" />
+      <h2>
+        <xsl:text>TYTUŁ </xsl:text>
+        <xsl:value-of select="./a:num" />
+        <br/>
+        <xsl:value-of select="./a:heading" />
+      </h2>
+      
+      <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
+    </section>
+  </xsl:template>
+
   <!-- for parts and chapters, include an easily stylable heading -->
   <xsl:template match="a:division">
     <section class="akn-division">
       <xsl:apply-templates select="@*" />
       <h2>
-        <xsl:choose>
-          <xsl:when test="$lang = 'pol'"><xsl:text>Dział </xsl:text></xsl:when>
-          <xsl:otherwise><xsl:text>Division </xsl:text></xsl:otherwise>
-        </xsl:choose>
+        <xsl:text>Dział </xsl:text>
         <xsl:value-of select="./a:num" />
         <br/>
         <xsl:value-of select="./a:heading" />
@@ -58,10 +69,7 @@
     <section class="akn-subdivision">
       <xsl:apply-templates select="@*" />
       <h2>
-        <xsl:choose>
-          <xsl:when test="$lang = 'pol'"><xsl:text>Oddział </xsl:text></xsl:when>
-          <xsl:otherwise><xsl:text>Subdivision </xsl:text></xsl:otherwise>
-        </xsl:choose>
+        <xsl:text>Oddział </xsl:text>
         <xsl:value-of select="./a:num" />
         <br/>
         <xsl:value-of select="./a:heading" />
