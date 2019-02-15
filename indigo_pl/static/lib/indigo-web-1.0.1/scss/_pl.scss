@@ -1,0 +1,93 @@
+/*
+ * Poland (PL) AKN styles
+ */
+
+.akoma-ntoso.country-pl {
+  .coverpage {
+    .doctype {
+      text-transform: uppercase;
+    }
+  }
+
+  /* paragraph elements */
+  .akn-intro,
+  .akn-list,
+  .akn-paragraph,
+  .akn-point {
+    margin-bottom: $akn-para-spacing;
+  }
+
+  /* numbered block elements */
+  .akn-alinea,
+  .akn-indent,
+  .akn-paragraph,
+  .akn-point {
+    > .akn-num,
+    > .akn-indent-num {
+      display: block;
+      float: left;
+    }
+  }
+  
+  /* 
+   * When a given unit (e.g. level 0, "Art. 123") has a single non-numbered subunit,
+   * we want to indent the subunit. Its text is however in <span class="akn-content">...</span>.
+   * For the <span> to accept margin-left, we must make it "display: block".
+   */
+  .akn-content {
+    display: block;
+  }
+  
+  .akn-content,
+  .akn-intro,
+  .akn-wrapUp,
+  .akn-alinea,
+  .akn-indent,
+  .akn-paragraph {
+    margin-left: $akn-para-indent;    
+  }
+  
+  /* 
+   * Point units (NOT letter units), are usually structured like this:
+   * <div class="akn-intro">...</div>
+   * <div class="akn-point">...</div>
+   * <div class="akn-point">...</div>
+   * <div class="akn-point">...</div>
+   * <div class="akn-wrapUp">...</div>
+   *
+   * We want the points to be indented more than the intro and wrap-up (even though Polish law
+   * PDF have them at same indent level) - it seems more legible to clearly go level down
+   * with each subunit. So, we have to do twice the indentation of "akn-intro", "akn-wrapUp", etc.
+   */
+  .akn-point {
+    margin-left: $akn-para-indent * 2;
+        
+    /* 
+     * Point inside point is really a letter unit. They never have intro, and only occasionally
+     * have wrap-up. So, seems OK to only indent it once.
+     */
+    > .akn-point {
+      margin-left: $akn-para-indent;
+    }
+  }
+  
+  /*
+   * "akn-section" is usually level 0 unit. They may either have a single non-numbered level 1
+   * unit, or multiple numbered level 1 units. We want the level 1 units to be at same indent
+   * level regardless if they are numbered or not. If they are numbered, they will be wrapped
+   * in <div class="akn-subsection">...</div>, itself indented. But for unnumbered, they will be
+   * directly under "akn-section" and we need to specifically increase indent here, making up
+   * for the lack of "akn-subsection".
+   */
+  .akn-section {  
+    > .akn-content,
+    > .akn-intro,
+    > .akn-wrapUp {
+      margin-left: $akn-para-indent * 2;
+    }
+    
+    > .akn-point {
+      margin-left: $akn-para-indent * 3;
+    }
+  }
+}
