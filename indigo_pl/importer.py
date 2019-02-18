@@ -365,7 +365,7 @@ class ImporterPL(Importer):
 
             # Concat all three nodes, surrounding text of node_plus_one with special labels.
             # Put concatenated text in node, remove node_plus_one & node_plus_two.
-            node.string = (node_txt + " " + self.SUPERSCRIPT_START + node_plus_one_txt
+            node.string = (node_txt + self.SUPERSCRIPT_START + node_plus_one_txt
                 + self.SUPERSCRIPT_END + node_plus_two_txt)
             nodes_to_remove.append(node_plus_one)
             nodes_to_remove.append(node_plus_two)
