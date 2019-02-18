@@ -42,8 +42,11 @@ class ImporterPL(Importer):
     """How far from top of page we assume header is over."""
 
     FOOTER_START_OFFSET = 1060
-    """How far from top of page we assume footer is starting."""
-    
+    """How far from top of page we assume footer starts."""
+
+    RIGHT_MARGIN_START_OFFSET = 630
+    """How far from left edge of page we assume right margin starts."""
+
     SIGNATURE_REGEX = '^\s*(Dz\.U\.|M\.P\.)\s+\d{4}\s+(Nr\s+\d+\s+)?poz\.\s+\d+\s*$'
     """Regex catching line containing only the law signature, e.g. "Dz.U. 2018 poz. 1234"."""
 
@@ -120,11 +123,12 @@ class ImporterPL(Importer):
         self.assert_all_text_nodes_have_top_left_height_font_attrs(xml)
         self.remove_empty_text_nodes(xml)
         self.remove_header_and_footer(xml)
+        self.remove_right_margin(xml)
         self.add_fontsize_to_all_text_nodes(xml)
         self.make_top_attribute_monotonically_increasing(xml)
         self.add_line_nums_to_law_text(xml)
         # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
-        self.remove_obsolete_parts(xml)
+        self.undecorate_outgoing_and_upcoming_sections(xml)
         self.process_superscripts(xml)
         self.remove_footnotes(xml)
         self.assert_only_text_nodes_with_most_common_fontsize_left(xml)
@@ -164,8 +168,8 @@ class ImporterPL(Importer):
 
     def remove_header_and_footer(self, xml):
         """Modify the passed in XML by removing tags laying outside the area we know to be
-        the actual law text. Generally, this will be the ISAP header, and footer containing 
-        page numbers.
+        the actual law text, vertically. Generally, this will be the ISAP header, and footer
+        containing page numbers.
 
         Args:
             xml: The XML to operate on, as a list of tags.
@@ -186,6 +190,28 @@ class ImporterPL(Importer):
         return ((tag.name == "text")
             and (((int(tag["top"]) % divider) <= self.HEADER_END_OFFSET) 
                  or ((int(tag["top"]) % divider) > self.FOOTER_START_OFFSET)))
+
+    def remove_right_margin(self, xml):
+        """Modify the passed in XML by removing tags laying outside the area we know to be
+        the actual law text, to the right. Generally, these are notes about which sections are
+        outgoing and upcoming.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        for tag in xml.find_all(self.is_right_margin):
+            tag.extract()
+
+    def is_right_margin(self, tag):
+        """Check if the given tag lies on the page at a position known to be in the right margin.
+
+        Args:
+            tag: The tag to check.
+
+        Returns:
+            bool: True if tag is in the right margin, False otherwise.
+        """
+        return (tag.name == "text") and (int(tag["left"]) > self.RIGHT_MARGIN_START_OFFSET)
 
     def add_fontsize_to_all_text_nodes(self, xml):
         """Add info about font size to XML nodes. It can be found in XML nodes called <fontspec>,
@@ -289,25 +315,52 @@ class ImporterPL(Importer):
             raise Exception("Most common fontsize in the PDF can't be the marker for no font size.")
         return most_common_fontsize
 
-    def remove_obsolete_parts(self, xml):
-        """Removes <text> nodes containing parts of the law that are becoming soon obsolete.
-        In ISAP unified texts, when a given article, etc is changing on some future date, they
+    def undecorate_outgoing_and_upcoming_sections(self, xml):
+        """In ISAP unified texts, when a given article, etc is changing on some future date, they
         first print the current version in italics and inside '[ ... ]' markers, and immediately
         after, they print the upcoming version in bold and inside '< ... >' markers.
-        
+
+        This function removes the '[', ']', '<', '>' markers. We rely on the person doing manual
+        post-processing to remove the section that's currently not effective and leave the section
+        that's currently in force.
+
         Args:
             xml: The XML to operate on, as a list of tags.
         """
-        is_in_obsolete_part = False
+
+        # TODO: Fix the following case: <text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>.
+        # Currently, this method does not recognize that first level 1 unit is outgoing.
+
+        is_in_outgoing_part = False
+        is_in_upcoming_part = False
         for node in xml.find_all('text'):
             i = node.find_all('i') # Find italics.
-            if (len(i) == 1) and (i[0].get_text() == node.get_text()):
-                if (re.match("^\s*\[", node.get_text())):
-                    is_in_obsolete_part = True
-                if (is_in_obsolete_part):
-                    if (re.match(".*\]\s*$", node.get_text())):
-                        is_in_obsolete_part = False
-                    node.extract()
+            b = node.find_all('b') # Find bold.
+            text = node.get_text().strip()
+
+            if (is_in_outgoing_part and is_in_upcoming_part):
+                raise Exception("Impossible to be in outgoing and upcoming section at same time.")
+            elif (is_in_outgoing_part and not is_in_upcoming_part):
+                if (len(i) != 1) or (i[0].get_text().strip() != text):
+                    raise Exception("Expected italics while being in outgoing section.")
+                if text.endswith("]"):
+                    is_in_outgoing_part = False
+                    node.string = text.rstrip("]")
+            elif (not is_in_outgoing_part and is_in_upcoming_part):
+                if (len(b) != 1) or (b[0].get_text().strip() != text):
+                    raise Exception("Expected bold while being in upcoming section.")
+                if text.endswith(">"):
+                    is_in_upcoming_part = False
+                    node.string = text.rstrip(">")
+            else:
+                if (len(i) == 1) and (i[0].get_text().strip() == text) and text.startswith("["):                    
+                    node.string = text.lstrip("[").rstrip("]")
+                    if not text.endswith("]"): # Needed in case outgoing section is one line only.
+                        is_in_outgoing_part = True
+                if (len(b) == 1) and (b[0].get_text().strip() == text) and text.startswith("<"):
+                    node.string = text.lstrip("<").rstrip(">")
+                    if not text.endswith(">"): # Needed in case upcoming section is one line only.
+                        is_in_upcoming_part = True
 
     def process_superscripts(self, xml):
         """Modify the passed in XML by searching for tags which represent superscript numbering and

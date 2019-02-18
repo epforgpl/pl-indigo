@@ -74,18 +74,26 @@ class ImporterPLTestCase(testcases.TestCase):
                     + ' </body>\n'
                     + '</html>')
         
-    def test_reformat_text_remove_obsolete_parts(self):
+    def test_undecorate_outgoing_and_upcoming_sections(self):
         line1 = u"<i>[All your base</i>"
         line2 = u"<i>are belong to</i>"
         line3 = u"<i>Legia Warszawa FC.]</i>"
         line4 = u"The right to consume sausages shall not be abrogated."
+        line5 = u"<b>&lt;Chopin must be heard</b>"
+        line6 = u"<b>at least</b>"
+        line7 = u"<b>per week.&gt;</b>"
         reformatted = self.importer.reformat_text(u""
             + make_tag(line1, top = 100) + u"\n" 
             + make_tag(line2, top = 110) + u"\n"
             + make_tag(line3, top = 120) + u"\n"
             + make_tag(line4, top = 130) + u"\n"
+            + make_tag(line5, top = 140) + u"\n"
+            + make_tag(line6, top = 150) + u"\n"
+            + make_tag(line7, top = 160) + u"\n"            
             + make_fontspec_tag())
-        assertEquals(reformatted, "The right to consume sausages shall not be abrogated.\n")
+        assertEquals(reformatted, "All your base are belong to Legia Warszawa FC. "
+                     + "The right to consume sausages shall not be abrogated. "
+                     + "Chopin must be heard at least per week.\n")
 
     def test_reformat_text_remove_hyphenation(self):
         line1 = u"All your base are be-"
@@ -193,6 +201,15 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_fontspec_tag())
         assertEquals(reformatted, u"All your base are belong to Legia Warszawa FC.\n")
 
+    def test_reformat_remove_right_margin(self):
+        text = u"All your base are belong to Legia Warszawa FC."
+        margin_text = u"Section 123 has been abrogated."
+        reformatted = self.importer.reformat_text(""
+            + make_tag(text) 
+            + make_tag(margin_text, 100, ImporterPL.RIGHT_MARGIN_START_OFFSET + 1)
+            + make_fontspec_tag())
+        assertEquals(reformatted, u"All your base are belong to Legia Warszawa FC.\n")
+
     def test_reformat_process_superscripts(self):
         before = u"Some text "
         text1 = u"Art. 123."
@@ -207,7 +224,7 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18)
             + make_fontspec_tag()) # Following line.
         assertEquals(reformatted, before.strip() + u"\n"  
-                     + text1.strip() + u" " + ImporterPL.SUPERSCRIPT_START + text2.strip()
+                     + text1.strip() + ImporterPL.SUPERSCRIPT_START + text2.strip()
                      + ImporterPL.SUPERSCRIPT_END + text3.strip() + u" " + after.strip() + u"\n")
 
     def test_reformat_remove_footnotes(self):
