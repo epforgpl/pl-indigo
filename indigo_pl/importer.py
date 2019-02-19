@@ -328,39 +328,44 @@ class ImporterPL(Importer):
             xml: The XML to operate on, as a list of tags.
         """
 
-        # TODO: Fix the following case: <text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>.
-        # Currently, this method does not recognize that first level 1 unit is outgoing.
-
         is_in_outgoing_part = False
         is_in_upcoming_part = False
         for node in xml.find_all('text'):
             i = node.find_all('i') # Find italics.
             b = node.find_all('b') # Find bold.
             text = node.get_text().strip()
+            btext = b[0].get_text().strip() if (len(b) == 1) else "!@#$%^&*()" # else garbage.
+            itext = i[0].get_text().strip() if (len(i) == 1) else "!@#$%^&*()" # else garbage.
 
             if (is_in_outgoing_part and is_in_upcoming_part):
                 raise Exception("Impossible to be in outgoing and upcoming section at same time.")
             elif (is_in_outgoing_part and not is_in_upcoming_part):
-                if (len(i) != 1) or (i[0].get_text().strip() != text):
+                if (itext != text):
                     raise Exception("Expected italics while being in outgoing section.")
                 if text.endswith("]"):
                     is_in_outgoing_part = False
                     node.string = text.rstrip("]")
             elif (not is_in_outgoing_part and is_in_upcoming_part):
-                if (len(b) != 1) or (b[0].get_text().strip() != text):
+                if (btext != text):
                     raise Exception("Expected bold while being in upcoming section.")
                 if text.endswith(">"):
                     is_in_upcoming_part = False
                     node.string = text.rstrip(">")
             else:
-                if (len(i) == 1) and (i[0].get_text().strip() == text) and text.startswith("["):                    
+                if (itext == text) and text.startswith("["):
                     node.string = text.lstrip("[").rstrip("]")
                     if not text.endswith("]"): # Needed in case outgoing section is one line only.
                         is_in_outgoing_part = True
-                if (len(b) == 1) and (b[0].get_text().strip() == text) and text.startswith("<"):
+                elif (btext == text) and text.startswith("<"):
                     node.string = text.lstrip("<").rstrip(">")
                     if not text.endswith(">"): # Needed in case upcoming section is one line only.
                         is_in_upcoming_part = True
+                # For cases like: "<text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>."
+                elif ((btext + u" " + itext == text)
+                    and btext.startswith("Art.") and itext.startswith("[")):
+                    node.string = btext + u" " + itext.lstrip("[").rstrip("]")
+                    if not itext.endswith("]"): # Needed in case outgoing section is one line only.
+                        is_in_outgoing_part = True
 
     def process_superscripts(self, xml):
         """Modify the passed in XML by searching for tags which represent superscript numbering and
