@@ -56,10 +56,19 @@
   </xsl:template>
 
   <xsl:template match="a:preface">
-    <xsl:text>PREFACE</xsl:text>
+    <xsl:value-of select="./a:docNumber" />
+    <xsl:text> </xsl:text>
+      <xsl:choose>
+        <xsl:when test="./a:docType = 'statute'"><xsl:text>USTAWA</xsl:text></xsl:when>
+        <xsl:when test="./a:docType = 'ordinance'"><xsl:text>ROZPORZĄDZENIE</xsl:text></xsl:when>
+        <xsl:otherwise><xsl:text>ERROR</xsl:text></xsl:otherwise>
+      </xsl:choose>    
+    <xsl:text> </xsl:text>
+    <xsl:value-of select="./a:docDate" />
+    <xsl:text> </xsl:text>
+    <xsl:value-of select="./a:docTitle" />
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
-    <xsl:apply-templates />
   </xsl:template>
 
   <xsl:template match="a:preamble">
