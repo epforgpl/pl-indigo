@@ -404,6 +404,10 @@ class ImporterPL(Importer):
         post-processing to remove the section that's currently not effective and leave the section
         that's currently in force.
 
+        Note that we don't currently catch cases when the outgoing/upcoming sections happen inline,
+        for example like this: "2) w okresie między dniem 1 stycznia następnego roku 
+        a [terminem określonym dla złożenia] <upływem terminu określonego na złożenie> zeznania..".
+
         Args:
             xml: The XML to operate on, as a list of tags.
         """
