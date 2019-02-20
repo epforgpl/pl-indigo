@@ -127,7 +127,7 @@ class ImporterPL(Importer):
         self.add_fontsize_to_all_text_nodes(xml)
         self.make_top_attribute_monotonically_increasing(xml)
         self.add_line_nums_to_law_text(xml)
-        # At this point, all <text> nodes with most common "fontsize" have "line" attribute.        
+        # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
         self.process_superscripts(xml)
         self.remove_footnotes(xml)
         self.undecorate_outgoing_and_upcoming_sections(xml)
