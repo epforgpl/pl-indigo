@@ -128,9 +128,9 @@ class ImporterPL(Importer):
         self.make_top_attribute_monotonically_increasing(xml)
         self.add_line_nums_to_law_text(xml)
         # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
-        self.undecorate_outgoing_and_upcoming_sections(xml)
         self.process_superscripts(xml)
         self.remove_footnotes(xml)
+        self.undecorate_outgoing_and_upcoming_sections(xml)
         self.assert_only_text_nodes_with_most_common_fontsize_left(xml)
         self.join_text_nodes_on_same_lines(xml)
         self.assert_each_text_node_has_increasing_line_attr(xml)
@@ -315,58 +315,6 @@ class ImporterPL(Importer):
             raise Exception("Most common fontsize in the PDF can't be the marker for no font size.")
         return most_common_fontsize
 
-    def undecorate_outgoing_and_upcoming_sections(self, xml):
-        """In ISAP unified texts, when a given article, etc is changing on some future date, they
-        first print the current version in italics and inside '[ ... ]' markers, and immediately
-        after, they print the upcoming version in bold and inside '< ... >' markers.
-
-        This function removes the '[', ']', '<', '>' markers. We rely on the person doing manual
-        post-processing to remove the section that's currently not effective and leave the section
-        that's currently in force.
-
-        Args:
-            xml: The XML to operate on, as a list of tags.
-        """
-
-        is_in_outgoing_part = False
-        is_in_upcoming_part = False
-        for node in xml.find_all('text'):
-            i = node.find_all('i') # Find italics.
-            b = node.find_all('b') # Find bold.
-            text = node.get_text().strip()
-            btext = b[0].get_text().strip() if (len(b) == 1) else "!@#$%^&*()" # else garbage.
-            itext = i[0].get_text().strip() if (len(i) == 1) else "!@#$%^&*()" # else garbage.
-
-            if (is_in_outgoing_part and is_in_upcoming_part):
-                raise Exception("Impossible to be in outgoing and upcoming section at same time.")
-            elif (is_in_outgoing_part and not is_in_upcoming_part):
-                if (itext != text):
-                    raise Exception("Expected italics while being in outgoing section.")
-                if text.endswith("]"):
-                    is_in_outgoing_part = False
-                    node.string = text.rstrip("]")
-            elif (not is_in_outgoing_part and is_in_upcoming_part):
-                if (btext != text):
-                    raise Exception("Expected bold while being in upcoming section.")
-                if text.endswith(">"):
-                    is_in_upcoming_part = False
-                    node.string = text.rstrip(">")
-            else:
-                if (itext == text) and text.startswith("["):
-                    node.string = text.lstrip("[").rstrip("]")
-                    if not text.endswith("]"): # Needed in case outgoing section is one line only.
-                        is_in_outgoing_part = True
-                elif (btext == text) and text.startswith("<"):
-                    node.string = text.lstrip("<").rstrip(">")
-                    if not text.endswith(">"): # Needed in case upcoming section is one line only.
-                        is_in_upcoming_part = True
-                # For cases like: "<text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>."
-                elif ((btext + u" " + itext == text)
-                    and btext.startswith("Art.") and itext.startswith("[")):
-                    node.string = btext + u" " + itext.lstrip("[").rstrip("]")
-                    if not itext.endswith("]"): # Needed in case outgoing section is one line only.
-                        is_in_outgoing_part = True
-
     def process_superscripts(self, xml):
         """Modify the passed in XML by searching for tags which represent superscript numbering and
         combining them with neighboring tags in such a way that superscripts are no longer
@@ -446,7 +394,61 @@ class ImporterPL(Importer):
         for node in xml.find_all('text'):
             if (int(node["fontsize"]) != most_common_fontsize):
                 node.extract()
-                
+
+    def undecorate_outgoing_and_upcoming_sections(self, xml):
+        """In ISAP unified texts, when a given article, etc is changing on some future date, they
+        first print the current version in italics and inside '[ ... ]' markers, and immediately
+        after, they print the upcoming version in bold and inside '< ... >' markers.
+
+        This function removes the '[', ']', '<', '>' markers. We rely on the person doing manual
+        post-processing to remove the section that's currently not effective and leave the section
+        that's currently in force.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+
+        is_in_outgoing_part = False
+        is_in_upcoming_part = False
+        for node in xml.find_all('text'):
+            i = node.find_all('i') # Find italics.
+            b = node.find_all('b') # Find bold.
+            text = node.get_text().strip()
+            btext = b[0].get_text().strip() if (len(b) == 1) else "!@#$%^&*()" # else garbage.
+            itext = i[0].get_text().strip() if (len(i) == 1) else "!@#$%^&*()" # else garbage.
+            
+            print(node)
+
+            if (is_in_outgoing_part and is_in_upcoming_part):
+                raise Exception("Impossible to be in outgoing and upcoming section at same time.")
+            elif (is_in_outgoing_part and not is_in_upcoming_part):
+                if (itext != text):
+                    raise Exception("Expected italics while being in outgoing section.")
+                if text.endswith("]"):
+                    is_in_outgoing_part = False
+                    node.string = text.rstrip("]")
+            elif (not is_in_outgoing_part and is_in_upcoming_part):
+                if (btext != text):
+                    raise Exception("Expected bold while being in upcoming section.")
+                if text.endswith(">"):
+                    is_in_upcoming_part = False
+                    node.string = text.rstrip(">")
+            else:
+                if (itext == text) and text.startswith("["):
+                    node.string = text.lstrip("[").rstrip("]")
+                    if not text.endswith("]"): # Needed in case outgoing section is one line only.
+                        is_in_outgoing_part = True
+                elif (btext == text) and text.startswith("<"):
+                    node.string = text.lstrip("<").rstrip(">")
+                    if not text.endswith(">"): # Needed in case upcoming section is one line only.
+                        is_in_upcoming_part = True
+                # For cases like: "<text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>."
+                elif ((btext + u" " + itext == text)
+                    and btext.startswith("Art.") and itext.startswith("[")):
+                    node.string = btext + u" " + itext.lstrip("[").rstrip("]")
+                    if not itext.endswith("]"): # Needed in case outgoing section is one line only.
+                        is_in_outgoing_part = True
+
     def assert_only_text_nodes_with_most_common_fontsize_left(self, xml):
         """Asserts that all <text> nodes have the most common fontsize.
         
