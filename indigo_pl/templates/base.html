@@ -1,0 +1,8 @@
+{# Override of base.html in main Indigo repo, adding Polish CSS. #}
+{% extends "base.html" %}
+{% load staticfiles %}
+
+ {% block head-css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/indigo_pl.css' %}">
+{% endblock %}

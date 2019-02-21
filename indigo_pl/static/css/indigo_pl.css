@@ -1,0 +1,96 @@
+/*
+ * Poland (PL) AKN styles. This is used to display Polish law in HTML form in Indigo editor.
+ *
+ * Note that there's also the file https://github.com/laws-africa/indigo/blob/master/indigo_app/static/lib/indigo-web-1.0.1/scss/_pl.scss
+ * which gets included in the CSS. This file here has the advantage that it's not in the main
+ * Indigo repository, but in the pl-indigo project, not requiring pull requests to the main repo.
+ * We do include the styles from that other file here, and override some of them.
+ * 
+ * In the future, if the Polish Indigo launch is successful, we may devise a better way, without
+ * having to override styles here.
+ */
+
+.akoma-ntoso.country-pl .coverpage .doctype {
+  text-transform: uppercase;
+}
+
+/* paragraph elements */
+.akoma-ntoso.country-pl .akn-intro,
+.akoma-ntoso.country-pl .akn-list,
+.akoma-ntoso.country-pl .akn-paragraph,
+.akoma-ntoso.country-pl .akn-point {
+  margin-bottom: 0.8em;
+}
+
+/* numbered block elements */
+.akoma-ntoso.country-pl .akn-alinea > .akn-num,
+.akoma-ntoso.country-pl .akn-indent > .akn-num,
+.akoma-ntoso.country-pl .akn-paragraph > .akn-num,
+.akoma-ntoso.country-pl .akn-point > .akn-num,
+.akoma-ntoso.country-pl .akn-alinea > .akn-indent-num,
+.akoma-ntoso.country-pl .akn-indent > .akn-indent-num,
+.akoma-ntoso.country-pl .akn-paragraph > .akn-indent-num,
+.akoma-ntoso.country-pl .akn-point > .akn-indent-num {
+  display: block;
+  float: left;
+  margin-left: 0;
+}
+
+/* 
+ * When a given unit (e.g. level 0, "Art. 123") has a single non-numbered subunit,
+ * we want to indent the subunit. Its text is however in <span class="akn-content">...</span>.
+ * For the <span> to accept margin-left, we must make it "display: block".
+ */
+.akoma-ntoso.country-pl .akn-content {
+  display: block;
+}
+
+.akoma-ntoso.country-pl .akn-content,
+.akoma-ntoso.country-pl .akn-intro,
+.akoma-ntoso.country-pl .akn-wrapUp,
+.akoma-ntoso.country-pl .akn-alinea,
+.akoma-ntoso.country-pl .akn-indent,
+.akoma-ntoso.country-pl .akn-paragraph {
+  margin-left: 3em;    
+}
+
+/* 
+ * Point units (NOT letter units), are usually structured like this:
+ * <div class="akn-intro">...</div>
+ * <div class="akn-point">...</div>
+ * <div class="akn-point">...</div>
+ * <div class="akn-point">...</div>
+ * <div class="akn-wrapUp">...</div>
+ *
+ * We want the points to be indented more than the intro and wrap-up (even though Polish law
+ * PDF have them at same indent level) - it seems more legible to clearly go level down
+ * with each subunit. So, we have to do twice the indentation of "akn-intro", "akn-wrapUp", etc.
+ */
+.akoma-ntoso.country-pl .akn-point {
+  margin-left: 6em;
+}
+    
+/* 
+ * Point inside point is really a letter unit. They never have intro, and only occasionally
+ * have wrap-up. So, seems OK to only indent it once.
+ */
+.akoma-ntoso.country-pl .akn-point > .akn-point {
+  margin-left: 3em;
+}
+
+/*
+ * "akn-section" is usually level 0 unit. They may either have a single non-numbered level 1
+ * unit, or multiple numbered level 1 units. We want the level 1 units to be at same indent
+ * level regardless if they are numbered or not. If they are numbered, they will be wrapped
+ * in <div class="akn-subsection">...</div>, itself indented. But for unnumbered, they will be
+ * directly under "akn-section" and we need to specifically increase indent here, making up
+ * for the lack of "akn-subsection".
+ */
+.akoma-ntoso.country-pl .akn-section > .akn-content,
+.akoma-ntoso.country-pl .akn-section > .akn-intro,
+.akoma-ntoso.country-pl .akn-section > .akn-wrapUp {
+  margin-left: 6em;
+}
+.akoma-ntoso.country-pl .akn-section > .akn-point {
+  margin-left: 9em;    
+}
