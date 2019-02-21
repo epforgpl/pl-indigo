@@ -282,7 +282,8 @@ class ImporterPL(Importer):
         last_top = 0
         last_left = 0
         last_width = 0
-        for node in xml.find_all(name = "text", attrs = {"fontsize": most_common_fontsize}):            
+        for node in xml.find_all(name = "text", attrs = {"fontsize": most_common_fontsize}):
+            print(node)            
             top = int(node["top"])
             left = int(node["left"])
             if (top - 2 < last_top) and (top + 2 > last_top):
