@@ -118,3 +118,11 @@
 .akoma-ntoso.country-pl .akn-point > .akn-point > .akn-num {
   color: #ab5f00;
 }
+
+/* 
+ * Hide the section to the right of the main Indigo law editor, to leave more space for it.
+ * This is particularly useful when having Indigo side-by-side with the PDF file.
+ */
+.annotations-container {
+  margin-right: 0 !important;
+}
