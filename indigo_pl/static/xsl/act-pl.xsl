@@ -126,8 +126,10 @@
   <xsl:template match="a:subsection[@refersTo='noncode_level1_unit']">
     <section class="akn-subsection">
       <xsl:if test="a:num != ''">
-        <xsl:value-of select="a:num"/>
-        <xsl:text>. </xsl:text>
+        <h4>
+          <xsl:value-of select="a:num"/>
+          <xsl:text>. </xsl:text>
+        </h4>
       </xsl:if>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
@@ -135,9 +137,11 @@
 
   <xsl:template match="a:subsection[@refersTo='code_level1_unit']">
     <section class="akn-subsection">
-      <xsl:text>§ </xsl:text>
-      <xsl:value-of select="a:num" />
-      <xsl:text>. </xsl:text>
+      <h4>
+        <xsl:text>§ </xsl:text>
+        <xsl:value-of select="a:num" />
+        <xsl:text>. </xsl:text>
+      </h4>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
   </xsl:template>

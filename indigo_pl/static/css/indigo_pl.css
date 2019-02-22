@@ -94,3 +94,27 @@
 .akoma-ntoso.country-pl .akn-section > .akn-point {
   margin-left: 9em;    
 }
+
+/*
+ * We want to make law unit headers stand out in the editor, so that the person verifying 
+ * that things line up sees irregularities right away. 
+ */
+.akoma-ntoso.country-pl .akn-section > h3,
+.akoma-ntoso.country-pl .akn-subsection > h4,
+.akoma-ntoso.country-pl .akn-point > .akn-num,
+.akoma-ntoso.country-pl .akn-point > .akn-point > .akn-num {
+  font-weight: bold;
+  font-size: 150%;
+}
+.akoma-ntoso.country-pl .akn-section > h3 {
+  color: #2b9410;
+}
+.akoma-ntoso.country-pl .akn-subsection > h4 {
+  color: red;
+}
+.akoma-ntoso.country-pl .akn-point > .akn-num {
+  color: orange;
+}
+.akoma-ntoso.country-pl .akn-point > .akn-point > .akn-num {
+  color: #ab5f00;
+}
