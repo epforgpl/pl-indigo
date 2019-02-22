@@ -119,6 +119,7 @@ class ImporterPL(Importer):
         Returns:
             str: Plain text containing the law.
         """
+        text = text.replace("</b><b>", "")
         xml = BeautifulSoup(text)
         self.assert_all_text_nodes_have_top_left_height_font_attrs(xml)
         self.remove_empty_text_nodes(xml)
@@ -420,9 +421,6 @@ class ImporterPL(Importer):
             text = node.get_text().strip()
             btext = b[0].get_text().strip() if (len(b) == 1) else "!@#$%^&*()" # else garbage.
             itext = i[0].get_text().strip() if (len(i) == 1) else "!@#$%^&*()" # else garbage.
-            
-            print(node)
-
             if (is_in_outgoing_part and is_in_upcoming_part):
                 raise Exception("Impossible to be in outgoing and upcoming section at same time.")
             elif (is_in_outgoing_part and not is_in_upcoming_part):
