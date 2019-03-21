@@ -116,26 +116,22 @@
     },
 
     quickEdit: function(e) {
-      // Click is on <a></a> nested in <div></div> nested in the element we really care about.
-      var elementToEdit = e.currentTarget.parentElement.parentElement;
-      var elemId = elementToEdit.id,
-          node = this.parent.documentContent.xmlDocument,
-          refersTo = elementToEdit.dataset.refersto;
+      var elemId = e.currentTarget.parentElement.parentElement.id,
+          node = this.parent.documentContent.xmlDocument;
 
       // the id might be scoped
       elemId.split("/").forEach(function(id) {
         node = node.querySelector('[id="' + id + '"]');
       });
 
-      if (node) this.editFragmentText(node, refersTo);
+      if (node) this.editFragmentText(node);
     },
 
-    editFragmentText: function(fragment, refersTo) {
+    editFragmentText: function(fragment) {
       var self = this;
 
       this.editing = true;
       this.fragment = fragment;
-      this.refersTo = refersTo;
 
       // ensure source code is hidden
       this.$('.btn.show-xml-editor.active').click();
@@ -154,11 +150,15 @@
         // This bit added b/c for Polish tag names don't correspond to Treetop rules for parsing.
         var fragmentToSend = self.fragment.tagName;
         if (fragmentToSend == 'section') {
-          if (self.refersTo == 'statute') {
-            fragmentToSend = 'statute_level0_unit';
-          }
-          if (self.refersTo == 'ordinance') {
-            fragmentToSend = 'ordinance_level0_unit';
+          var sectionElement = self.$('section.akn-section').first();
+          if (sectionElement) {
+            var actType = sectionElement.data('refersto');            
+            if (actType == 'statute') {
+              fragmentToSend = 'statute_level0_unit';
+            }
+            if (actType == 'ordinance') {
+              fragmentToSend = 'ordinance_level0_unit';
+            }
           }
         }
 
@@ -199,7 +199,8 @@
       var $btn = this.$('.text-editor-buttons .btn.save');
       var content = this.textEditor.getValue();
       var fragment = this.$textEditor.data('fragment');
-      fragment = this.parent.model.tradition().settings.grammar.fragments[fragment] || fragment;
+      // For Polish version, I'm removing here the looking up the fragment in traditions.js
+      // fragment = this.parent.model.tradition().settings.grammar.fragments[fragment] || fragment;
 
       // should we delete the item?
       if (!content.trim() && fragment != 'akomaNtoso') {
