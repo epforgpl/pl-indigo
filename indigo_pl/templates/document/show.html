@@ -1,0 +1,41 @@
+{# Override of document/show.html in main Indigo repo, only displaying document content if the user
+   is either a superuser, or he created the document. #}
+{% extends "document/show.html" %}
+
+{% block main-header-title %}
+  <h5 class="main-header-title">
+    <span class="document-title">{{ document.title }}</span>
+    <span class="badge badge-info if-published">published</span>
+    <span class="badge badge-warning if-draft">draft</span>
+    <span class="badge badge-info if-repealed">repealed</span>
+  </h5>
+
+  <div class="document-toolbar-wrapper">
+    {# Hide the option to download XML if not a superuser. #}
+    {% if user.is_superuser %}
+      {% include 'document/_menu.html' %}
+    {% endif %}
+    {% include 'document/_toolbar.html' %}
+  </div>
+{% endblock %}
+
+{% block content %}
+  {# Hide content if not superuser or owner. #}
+  {% if user.is_superuser %}
+    {{ block.super }}
+    {% include "document/_revisions.html" %}
+    {% include "document/_preview.html" %}
+    {% include "document/_properties.html" %}
+    {% include "document/_attachments.html" %}
+    {% include "document/_cheatsheet.html" %}
+  {% elif document.created_by_user|upper == user.email|upper %}
+    {{ block.super }}
+    {% include "document/_revisions.html" %}
+    {% include "document/_preview.html" %}
+    {% include "document/_properties.html" %}
+    {% include "document/_attachments.html" %}
+    {% include "document/_cheatsheet.html" %}  
+  {% else %}
+    <p class="alert alert-info">You don't have access to this document.</p>
+  {% endif %}
+{% endblock %}
