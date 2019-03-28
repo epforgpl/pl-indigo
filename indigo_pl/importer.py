@@ -408,6 +408,106 @@ class ImporterPL(Importer):
         Note that we don't currently catch cases when the outgoing/upcoming sections happen inline,
         for example like this: "2) w okresie między dniem 1 stycznia następnego roku 
         a [terminem określonym dla złożenia] <upływem terminu określonego na złożenie> zeznania..".
+        
+        Examples of situations this has to deal with (all are checked in test_importer_pl.py):
+        
+        1. Ustawa z dnia 12 października 1990 r. o Straży Granicznej
+           Art. 5aa is coming into force
+           Note here the line with *2* <b> markers (starts "podległych ...").
+           
+        <text ...>3)  BSWSG wykonuje Komendant BSWSG. </text> # This is end of previous unit.
+        <text ...><b>&lt;Art. 5aa. 1.  Komendant  Główny  Straży  Granicznej  może  upoważnić </b></text>
+        <text ...><b>podległych  funkcjonariuszy  lub  pracowników  do  załatwiania</b> <b>spraw  w jego </b></text>
+        <text ...><b>imieniu w określonym zakresie. </b></text>
+        <text ...><b>2. Komendant  oddziału  Straży  Granicznej  może  upoważnić  podległych </b></text>
+        <text ...><b>funkcjonariuszy  pełniących  służbę  w terytorialnym  zasięgu  działania  oddziału </b></text>
+        <text ...><b>lub pracowników do załatwiania spraw w jego imieniu w określonym zakresie. </b></text>
+        <text ...><b>3. Upoważnienia,  o których  mowa  w ust. 1  i 2,  mogą  być  udzielone,  jeżeli </b></text>
+        <text ...><b>zakres  danego  upoważnienia  nie  został  określony  w ustawie  albo  w przepisach </b></text>
+        <text ...><b>wydanych na podstawie ustawy.&gt;</b> </text>
+        <text ...><b>Art. 5b.</b> Kierownicy ... </text> # This is start of next unit.
+        
+        2. Ustawa z dnia 12 października 1990 r. o Straży Granicznej
+           Old version of Art. 16g is being retired.
+           Note here <b></b> inside <i></i>.
+        
+        <text ...><i>zezwolenia ... ostateczna.] </i></text> # This is end of previous unit.
+        <text ...><i>[<b>Art. 16g.</b></i></text>
+        <text ...><i>1.  Organy  administracji  miar  są  uprawnione  do  przeprowadzania </i></text>
+        <text ...><i>kontroli  podmiotów  i przedsiębiorców,  o których  mowa  w art. 16a  i art. 16c, </i></text>
+        <text ...><i>w zakresie  spełniania  warunków  niezbędnych  do  wykonywania  udzielonych </i></text>
+        <text ...><i>upoważnień i zezwoleń oraz przestrzegania przepisów ustawy. </i></text>
+        <text ...><i>2. Do  kontroli  upoważnionych  podmiotów  i uprawnionych  przedsiębiorców </i></text>
+        <text ...><i>stosuje się odpowiednio przepisy art. 21 ust. 1 pkt 1 i 4, ust. 2 i 4.] </i></text>
+        <text ...><b>&lt;Art. 16g. Organy ... </b></text> # This is start of next unit.
+        
+        3. Ustawa z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych 
+           ze środków publicznych
+           Art. 20, ust. 1 is changing
+           Note here that in one <text> node we have <b>Art. 20.</b> and <i>...</i>.
+        
+        <text ...><b>przepisy ... &gt; </b></text> # This is end of previous unit.
+        <text ...><b>Art. 20.</b> <i>[1.  Świadczenia  opieki  zdrowotnej  w szpitalach  i świadczenia </i></text>
+        <text ...><i>specjalistyczne w ambulatoryjnej opiece zdrowotnej są udzielane według kolejności </i></text>
+        <text ...><i>zgłoszenia  w dniach  i godzinach  ich  udzielania  przez  świadczeniodawcę,  który </i></text>
+        <text ...><i>zawarł umowę o udzielanie świadczeń opieki zdrowotnej.]</i> </text>
+        <text ...><b>&lt;1. Świadczenia </b></text>
+        <text ...><b>opieki </b></text>
+        <text ...><b>zdrowotnej </b></text>
+        <text ...><b>w szpitalach, </b></text>
+        <text ...><b>świadczenia </b></text>
+        <text ...><b>specjalistyczne  w ambulatoryjnej  opiece  zdrowotnej  oraz  stacjonarne </b></text>
+        <text ...><b>i całodobowe  świadczenia  zdrowotne  inne  niż  szpitalne  są  udzielane  według </b></text>
+        <text ...><b>kolejności  zgłoszenia  w dniach  i godzinach  ich  udzielania  przez </b></text>
+        <text ...><b>świadczeniodawcę,  który  zawarł  umowę  o udzielanie  świadczeń  opieki </b></text>
+        <text ...><b>zdrowotnej.&gt; </b></text>
+        <text ...>1a. Na  liście  ... </text> # This is start of next unit.
+        
+        4. Ustawa z dnia 15 lipca 2011 r. o zawodach pielęgniarki i położnej
+           In Art. 80, ust 8, pkt 1 a few words inside a sentence are changing.
+        
+        <text ...>8. Potwierdzenia, o którym mowa w ust. 7, dokonuje się na podstawie wniosku </text>
+        <text ...>o nadanie uprawnień: </text>
+        <text ...>1)  podpisanego  kwalifikowanym  podpisem  elektronicznym  <i>[lub  podpisem </i></text>
+        <text ...><i>zaufanym]</i> <b>&lt;podpisem zaufanym lub podpisem osobistym&gt;</b> lub </text>
+        <text ...>2)  potwierdzonego  przez  właściwą  okręgową  izbę  pielęgniarek  i  położnych  lub </text>
+        <text ...>Naczelną  Izbę  Pielęgniarek  i  Położnych  w  zakresie  danych  podmiotu </text>
+        <text ...>zamierzającego wykonywać działalność w zakresie kształcenia podyplomowego, </text>
+        <text ...>o którym mowa w ust. 1. </text>
+        
+        5. Ustawa z dnia 16 lipca 2004 r. Prawo telekomunikacyjne
+        
+        <text ...><b>Art. 61a.</b> <i>[1. Jeżeli konieczność wprowadzenia zmiany warunków umowy, w tym </i></text>
+        <text ...><i>określonych </i></text>
+        <text ...><i>w regulaminie </i></text>
+        <text ...><i>świadczenia </i></text>
+        <text ...><i>publicznie </i></text>
+        <text ...><i>dostępnych </i></text>
+        <text ...><i>usług </i></text>
+        <text ...><i>telekomunikacyjnych lub w cenniku usług telekomunikacyjnych, wynika wyłącznie ze </i></text>
+        <text ...><i>zmiany stawki podatku od towarów i usług stosowanej dla usług telekomunikacyjnych, </i></text>
+        <text ...><i>dostawca  publicznie  dostępnych  usług  telekomunikacyjnych  wykonuje  obowiązki, </i></text>
+        <text ...><i>o których  mowa  w art. 60a  ust. 1  i 1b  oraz  art. 61  ust. 5  i 5a,  poprzez  podanie  do </i></text>
+        <text ...><i>publicznej  wiadomości  informacji:]</i> <b>&lt;Jeżeli  konieczność  wprowadzenia  zmiany </b></text>
+        <text ...><b>warunków  umowy,  w tym  określonych  w regulaminie  świadczenia  publicznie </b></text>
+        <text ...><b>dostępnych </b></text>
+        <text ...><b>usług </b></text>
+        <text ...><b>telekomunikacyjnych </b></text>
+        <text ...><b>lub </b></text>
+        <text ...><b>w cenniku </b></text>
+        <text ...><b>usług </b></text>
+        <text ...><b>telekomunikacyjnych, wynika wyłącznie ze zmiany stawki podatku od towarów </b></text>
+        <text ...><b>i usług  stosowanej  dla  usług  telekomunikacyjnych,  dostawca  publicznie </b></text>
+        <text ...><b>dostępnych  usług  telekomunikacyjnych  wykonuje  obowiązki,  o których  mowa </b></text>
+        <text ...><b>w art. 60a ust. 1 i 1b oraz art. 61 ust. 5 i 5a, przez publikację na swojej stronie </b></text>
+        <text ...><b>internetowej informacji:&gt;</b> </text>
+        <text ...>1)  o  zmianie  warunków  umowy,  w tym  określonych  w regulaminie  świadczenia </text>
+        <text ...>publicznie  dostępnych  usług  telekomunikacyjnych,  zmianie  w cenniku  usług </text>
+        <text ...>telekomunikacyjnych, terminie ich wprowadzenia, wraz ze wskazaniem miejsca </text>
+        <text ...>udostępnienia  treści  zmiany  lub  warunków  umowy  lub  cennika </text>
+        <text ...>uwzględniających tę zmianę; </text>
+        <text ...>2)  o prawie wypowiedzenia umowy przez abonenta w przypadku braku akceptacji </text>
+        <text ...>tych zmian; </text>
 
         Args:
             xml: The XML to operate on, as a list of tags.
@@ -416,36 +516,61 @@ class ImporterPL(Importer):
         is_in_outgoing_part = False
         is_in_upcoming_part = False
         for node in xml.find_all('text'):
-            i = node.find_all('i') # Find italics.
-            b = node.find_all('b') # Find bold.
+            i_tags = node.find_all('i') # Find italics.
+            b_tags = node.find_all('b') # Find bold.
+
+            # Get the following texts without any tags, with and without whitespaces:
+            # (1) entire text in the node,
+            # (2) concatenated text pieces in all <i> tags,
+            # (3) concatenated text pieces in all <b> tags.
             text = node.get_text().strip()
-            btext = b[0].get_text().strip() if (len(b) == 1) else "!@#$%^&*()" # else garbage.
-            itext = i[0].get_text().strip() if (len(i) == 1) else "!@#$%^&*()" # else garbage.
+            text_no_whitespace = node.get_text().replace(" ", "")
+            itext_no_whitespace = ""
+            itext = ""
+            for i_tag in i_tags:
+                itext_no_whitespace = itext_no_whitespace + i_tag.get_text().replace(" ", "")
+                itext = itext + i_tag.get_text().strip()
+            btext_no_whitespace = ""
+            btext = ""
+            for b_tag in b_tags:
+                btext_no_whitespace = btext_no_whitespace + b_tag.get_text().replace(" ", "")
+                btext = btext + b_tag.get_text().strip()
+
             if (is_in_outgoing_part and is_in_upcoming_part):
                 raise Exception("Impossible to be in outgoing and upcoming section at same time.")
             elif (is_in_outgoing_part and not is_in_upcoming_part):
-                if (itext != text):
-                    raise Exception("Expected italics while being in outgoing section.")
-                if text.endswith("]"):
+                # For a line fully belonging to an outgoing section.
+                if (itext_no_whitespace == text_no_whitespace):
+                    if text.endswith("]"):
+                        is_in_outgoing_part = False
+                        node.string = text.rstrip("]")
+                # For a line combining outgoing section and upcoming section (see the method
+                # comment, example from "Ustawa z dnia 16 lipca 2004 r. Prawo telekomunikacyjne").
+                elif ((itext_no_whitespace + btext_no_whitespace == text_no_whitespace) 
+                      and itext.endswith("]") and btext.startswith("<")):
                     is_in_outgoing_part = False
-                    node.string = text.rstrip("]")
+                    node.string = itext.rstrip("]") + u" " + btext.lstrip("<").rstrip(">")
+                    if not btext.endswith(">"): # Needed in case upcoming section is one line only.
+                        is_in_upcoming_part = True
+                else:
+                    raise Exception("Expected italics while being in outgoing section.")
             elif (not is_in_outgoing_part and is_in_upcoming_part):
-                if (btext != text):
+                if (btext_no_whitespace != text_no_whitespace):
                     raise Exception("Expected bold while being in upcoming section.")
                 if text.endswith(">"):
                     is_in_upcoming_part = False
                     node.string = text.rstrip(">")
             else:
-                if (itext == text) and text.startswith("["):
+                if (itext_no_whitespace == text_no_whitespace) and text.startswith("["):
                     node.string = text.lstrip("[").rstrip("]")
                     if not text.endswith("]"): # Needed in case outgoing section is one line only.
                         is_in_outgoing_part = True
-                elif (btext == text) and text.startswith("<"):
+                elif (btext_no_whitespace == text_no_whitespace) and text.startswith("<"):
                     node.string = text.lstrip("<").rstrip(">")
                     if not text.endswith(">"): # Needed in case upcoming section is one line only.
                         is_in_upcoming_part = True
                 # For cases like: "<text ...><b>Art. 22c.</b> <i>[1. Some text </i></text>."
-                elif ((btext + u" " + itext == text)
+                elif ((btext_no_whitespace + itext_no_whitespace == text_no_whitespace)
                     and btext.startswith("Art.") and itext.startswith("[")):
                     node.string = btext + u" " + itext.lstrip("[").rstrip("]")
                     if not itext.endswith("]"): # Needed in case outgoing section is one line only.
