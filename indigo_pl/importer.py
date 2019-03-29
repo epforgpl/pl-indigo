@@ -25,6 +25,9 @@ class ImporterPL(Importer):
     
     NO_FONTSIZE = -1
     """Magic number to indicate that we couldn't find fontsize for the node that has it."""
+
+    NO_HEIGHT = -1
+    """Magic number to indicate that we couldn't find height for the node that has it."""
     
     PAGE_NUM_MULTIPLIER = 100000
     """We increase the "top" attribute of each <text> tag in the PDF by this number * page number
@@ -126,6 +129,7 @@ class ImporterPL(Importer):
         self.remove_header_and_footer(xml)
         self.remove_right_margin(xml)
         self.add_fontsize_to_all_text_nodes(xml)
+        self.remove_formulas(xml)
         self.make_top_attribute_monotonically_increasing(xml)
         self.add_line_nums_to_law_text(xml)
         # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
@@ -229,9 +233,57 @@ class ImporterPL(Importer):
         for node in xml.find_all("text"):
             node["fontsize"] = fonts_to_fontsizes.get(node["font"], self.NO_FONTSIZE)
 
+    def remove_formulas(self, xml):
+        """Remove <text> nodes which draw a mathematical formula. We can't parse them at the
+        moment. :(
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        formula_nodes = []
+        is_in_formula = False
+        previous_node_text = u""
+        for node in xml.find_all(name = "text",
+                                 attrs = {"fontsize": self.find_most_common_fontsize(xml)}):            
+            node_text = node.get_text().strip().replace("  ", " ")
+            # Here is how we catch beginning of formula. Add other phrases if needed.
+            # We unfortunately may need to look at previous line, hence the nested ifs...
+            if (node_text.endswith(u"wzoru:")):
+                # Check phrase "według wzoru:".
+                if (node_text.endswith(u"według wzoru:")):
+                    is_in_formula = True
+                elif (previous_node_text.endswith(u"według")):
+                    is_in_formula = True
+                # Check phrase "według następującego wzoru:".
+                if (node_text.endswith(u"następującego wzoru:")):
+                    if (node_text.endswith(u"według następującego wzoru:")):
+                        is_in_formula = True
+                    elif (previous_node_text.endswith(u"według")):
+                        is_in_formula = True
+                elif (previous_node_text.endswith(u"według następującego")):
+                    is_in_formula = True
+            elif (is_in_formula):
+                # Here is how we catch end of formula. Add other phrases if needed.
+                if (node_text.startswith(u"w którym poszczególne symbole oznaczają")
+                    or node_text.startswith(u"gdzie poszczególne symbole oznaczają")
+                    or node_text.startswith(u"w którym poszczególne litery oznaczają")):
+                    is_in_formula = False
+                    # Remove formula nodes.
+                    for formula_node in formula_nodes:
+                        formula_node.extract()                    
+                else:
+                    formula_nodes.append(node)
+            previous_node_text = node_text
+        if (is_in_formula):
+            raise Exception('After iterating through entire law text, parser is inside a formula.')
+
     def make_top_attribute_monotonically_increasing(self, xml):
-        """Increase "top" attribute of <text> nodes by 
-        {page number <text> is on} * PAGE_NUM_MULTIPLIER. Then it'll be monotonically increasing.
+        """Increase "top" attribute of <text> nodes by
+        {page number <text> is on} * PAGE_NUM_MULTIPLIER.
+
+        Also, call the method balancing out "top" and "height".
+
+        Then, "top" should be monotonically increasing.
 
         Args:
             xml: The XML to operate on, as a list of tags.
@@ -240,6 +292,54 @@ class ImporterPL(Importer):
             num = int(page["number"])
             for node in page.find_all("text"):
                 node["top"] = int(node["top"]) + self.PAGE_NUM_MULTIPLIER * num
+        self.adjust_top_and_height(xml)
+
+    def adjust_top_and_height(self, xml):
+        """For whatever reason, sometimes we encounter the following sequence of <text> nodes:
+        
+        <text .. fontsize="14" height="18" left="111" top="14200208">
+          <b>w którym poszczególne symbole oznaczają: </b>
+        </text>
+        <text .. fontsize="14" height="15" left="111" top="14200239">
+          <b>Wk –  wynik końcowy z egzaminów zawodowych, </b>
+        </text>
+        <text .. fontsize="14" height="15" left="111" top="14200267">
+          <b>Kn – </b>
+        </text>
+        <text .. fontsize="14" height="15" left="164" top="14200267">
+          <b>wynik  z egzaminu  zawodowego  z kwalifikacji  wyodrębnionej </b>
+        </text>
+        <text .. fontsize="14" height="15" left="164" top="14200295">
+          <b>w zawodzie, </b></text>
+        <text .. fontsize="14" height="15" left="111" top="14200323">
+          <b>n – </b>
+        </text>
+        <text .. fontsize="14" height="18" left="164" top="14200320">
+          <b>liczba kwalifikacji wyodrębnionych w danym zawodzie. </b>
+        </text>
+        
+        Note here that all the nodes have the same font size, but "height" differs between
+        18 (most common value in ISAP unified texts) and 15 or 16. And in particular, the last two
+        nodes in the PDF are visually on the same line, but because of unequal "height" (2-3 point
+        difference), the "top" param is also offset by 2-3 points. This in turn causes an exception
+        in the code that checks that "top" is monotonically increasing.
+        
+        So, this method looks for nodes where height is equal "most_common_height - 3" (or 2) and:
+        - increases "height" by 2-3
+        - decreases "top" by 3.         
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        most_common_height = self.find_most_common_height(xml)
+        for node in xml.find_all(name = "text",
+                         attrs = {"fontsize": self.find_most_common_fontsize(xml)}):
+            if (int(node["height"]) == most_common_height - 2):
+                node["height"] = most_common_height
+                node["top"] = int(node["top"]) - 2
+            if (int(node["height"]) == most_common_height - 3):
+                node["height"] = most_common_height
+                node["top"] = int(node["top"]) - 3
 
     def add_line_nums_to_law_text(self, xml):
         """For all <text> tags that represent parts of the law text, add a "line" attribute
@@ -315,6 +415,24 @@ class ImporterPL(Importer):
         if (most_common_fontsize == self.NO_FONTSIZE):
             raise Exception("Most common fontsize in the PDF can't be the marker for no font size.")
         return most_common_fontsize
+    
+    def find_most_common_height(self, xml):
+        """Returns the height value that most of <text> nodes in the doc have.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+
+        Returns:
+            int: The height value that most of <text> nodes have.
+        """
+        heights = {}
+        for node in xml.find_all("text"):
+            height = int(node["height"])
+            heights[height] = ((heights[height] + 1) if heights.has_key(height) else 1)
+        most_common_height = max(heights, key = heights.get)
+        if (most_common_height == self.NO_HEIGHT):
+            raise Exception("Most common height in the PDF can't be the marker for no height.")
+        return most_common_height
 
     def process_superscripts(self, xml):
         """Modify the passed in XML by searching for tags which represent superscript numbering and

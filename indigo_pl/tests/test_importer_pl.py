@@ -74,6 +74,28 @@ class ImporterPLTestCase(testcases.TestCase):
                     + ' </body>\n'
                     + '</html>')
 
+    def test_adjust_top_and_height(self):
+        line1_part1 = u"All your base "
+        line1_part2 = u"are belong to "
+        line1_part3 = u"Legia Warszawa FC."
+        line2_part1 = u"The right to consume sausages shall not be abrogated."
+        line3_part1 = u"Chopin must be heard "
+        line3_part2 = u"at least once "
+        line3_part3 = u"per week."
+        indent = ImporterPL.INDENT_LEVELS1[0]
+        reformatted = self.importer.reformat_text(u""
+            + make_tag(line1_part1, top = 100, height = 18, left = indent) + u"\n" 
+            + make_tag(line1_part2, top = 103, height = 15, left = indent + 15) + u"\n"
+            + make_tag(line1_part3, top = 100, height = 18, left = indent + 30) + u"\n"
+            + make_tag(line2_part1, top = 110, height = 18, left = indent) + u"\n"
+            + make_tag(line3_part1, top = 120, height = 18, left = indent) + u"\n"
+            + make_tag(line3_part2, top = 120, height = 18, left = indent + 15) + u"\n"
+            + make_tag(line3_part3, top = 122, height = 16, left = indent + 30) + u"\n"
+            + make_fontspec_tag())
+        assertEquals(reformatted, "All your base are belong to Legia Warszawa FC. "
+                     + "The right to consume sausages shall not be abrogated. "
+                     + "Chopin must be heard at least once per week.\n")    
+
     def test_undecorate_outgoing_and_upcoming_sections_1(self):
         line1 = u"<i>[All your base</i>"
         line2 = u"<i>are belong to</i>"
