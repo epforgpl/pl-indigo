@@ -634,6 +634,20 @@ class ImporterPL(Importer):
         <text ...>2)  o prawie wypowiedzenia umowy przez abonenta w przypadku braku akceptacji </text>
         <text ...>tych zmian; </text>
 
+        6. Ustawa z dnia 25 sierpnia 2006 r. o biokomponentach i biopaliwach ciekłych (Art. 23)
+        Note how someone at ISAP excluded ".&gt;" from <b></b>.
+
+        <text ...>ciekłych i biopaliw ciekłych. </text> # This is end of previous unit.
+        <text ...><b>&lt;1d.  Podmiot  realizujący  Narodowy  Cel  Wskaźnikowy  może  zrealizować </b></text>
+        <text ...><b>obowiązek,  o którym  mowa  w ust. 1,  z wykorzystaniem  biokomponentów </b></text>
+        <text ...><b>zawartych w paliwach powstałych w wyniku współuwodornienia. </b></text>
+        <text ...><b>1e. Minister właściwy do spraw energii określi, w drodze rozporządzenia, </b></text>
+        <text ...><b>metodykę  obliczania  zawartości  biokomponentów  zawartych  w paliwach </b></text>
+        <text ...><b>powstałych  w wyniku  współuwodornienia,  biorąc  pod  uwagę  stan  wiedzy </b></text>
+        <text ...><b>technicznej  w tym  zakresie  wynikający  z badań  tych  paliw  lub  doświadczenia </b></text>
+        <text ...><b>w ich stosowaniu</b>.&gt;<b> </b></text>
+        <text ...>2. Minimalny udział, o którym mowa w ust. 1: </text> # This is start of next unit.
+
         Args:
             xml: The XML to operate on, as a list of tags.
         """
@@ -680,11 +694,14 @@ class ImporterPL(Importer):
                 else:
                     raise Exception("Expected italics while being in outgoing section.")
             elif (not is_in_outgoing_part and is_in_upcoming_part):
-                if (btext_no_whitespace != text_no_whitespace):
+                if ((btext_no_whitespace == text_no_whitespace)
+                    # In case someone excludes ".&gt;" from <b></b> markers.
+                    or (btext_no_whitespace + u".>") == text_no_whitespace):                    
+                    if text.endswith(">"):
+                        is_in_upcoming_part = False
+                        node.string = text.rstrip(">")
+                else:
                     raise Exception("Expected bold while being in upcoming section.")
-                if text.endswith(">"):
-                    is_in_upcoming_part = False
-                    node.string = text.rstrip(">")
             else:
                 if (itext_no_whitespace == text_no_whitespace) and text.startswith("["):
                     node.string = text.lstrip("[").rstrip("]")
