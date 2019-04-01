@@ -273,7 +273,8 @@ class ImporterPL(Importer):
                 # Here is how we catch end of formula. Add other phrases if needed.
                 if (node_text.startswith(u"w którym poszczególne symbole oznaczają")
                     or node_text.startswith(u"gdzie poszczególne symbole oznaczają")
-                    or node_text.startswith(u"w którym poszczególne litery oznaczają")):
+                    or node_text.startswith(u"w którym poszczególne litery oznaczają")
+                    or node_text.startswith(u"gdzie znaczenie poszczególnych symboli jest następujące")):
                     is_in_formula = False
                     # Remove formula nodes.
                     for formula_node in formula_nodes:
