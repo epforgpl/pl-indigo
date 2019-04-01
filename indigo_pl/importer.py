@@ -88,9 +88,16 @@ class ImporterPL(Importer):
     """
     INDENT_LEVELS2 = [76, 111, 143, 170]
     """The other option for indent levels in unified Polish law PDFs.
-    
+
     Getting these numbers from statute: "o odnawialnych źródłach energii".
-    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20150000478/U/D20150478Lj.pdf
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20150000478/U/D20150478Lj.pdf    
+    """
+
+    INDENT_LEVELS3 = [80, 115, 147, 174]
+    """Yet another other option for indent levels in unified Polish law PDFs.
+
+    Getting these numbers from statute: "Prawo geodezyjne i kartograficzne".
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU19890300163/U/D19890163Lj.pdf
     """
 
     locale = ('pl', None, None)
@@ -774,13 +781,13 @@ class ImporterPL(Importer):
 
         # Check all line starts. If they begin with a dash, and the dash is just in a running
         # piece of text (as opposed to e.g. a list of tirets, or explanatory section at the end
-        # of a list of points) - then move the dash to the line above. 
+        # of a list of points) - then move the dash to the line above.
         last_seen_top = 0
         last_line_start = None
         last_node = None
         for node in xml.find_all("text"):
             if (int(node["top"]) > last_seen_top):
-                if ((not last_node is None) and (not last_line_start is None) 
+                if ((not last_node is None) and (not last_line_start is None)
                     and self.should_join_dash_line(node, last_node, last_line_start)):
                     # Moving the dash to the line above. Note that one trailing whitespace will be
                     # added after the dash when newlines are removed.
@@ -814,16 +821,18 @@ class ImporterPL(Importer):
             last_seen_top = int(node["top"])
             left = int(node["left"])
             lefts[left] = ((lefts[left] + 1) if lefts.has_key(left) else 1)
-       
+
         # Sort by the "left" offset.
-        lefts = sorted(lefts.items(), key=lambda x: x[0])        
+        lefts = sorted(lefts.items(), key=lambda x: x[0])
         # Check which of the two options of indent levels we have.
         lefts = [item[0] for item in lefts]
         if (lefts[0] == 96):
             return self.INDENT_LEVELS1
         if (lefts[0] == 76):
             return self.INDENT_LEVELS2
-        return None
+        if (lefts[0] == 80):
+            return self.INDENT_LEVELS3
+        raise Exception('Could not match any indent level set to the document.')
 
     def get_indent_level(self, left, indents):
         """For a given value of "left" parameter of an XML node and list of increasing indent
