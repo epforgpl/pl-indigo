@@ -371,7 +371,40 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"udostępnienia  treści  zmiany  lub  warunków  umowy  lub  cennika "
                      + u"uwzględniających tę zmianę;\n"
                      + u"2)  o prawie wypowiedzenia umowy przez abonenta w przypadku braku akceptacji "
-                     + u"tych zmian;\n")        
+                     + u"tych zmian;\n")
+
+    def test_undecorate_outgoing_and_upcoming_sections_7(self):
+        # Ustawa z dnia 25 sierpnia 2006 r. o biokomponentach i biopaliwach ciekłych (Art. 23)
+        line1 = u"<b>&lt;1d.  Podmiot  realizujący  Narodowy  Cel  Wskaźnikowy  może  zrealizować </b>"
+        line2 = u"<b>obowiązek,  o którym  mowa  w ust. 1,  z wykorzystaniem  biokomponentów </b>"
+        line3 = u"<b>zawartych w paliwach powstałych w wyniku współuwodornienia. </b>"
+        line4 = u"<b>1e. Minister właściwy do spraw energii określi, w drodze rozporządzenia, </b>"
+        line5 = u"<b>metodykę  obliczania  zawartości  biokomponentów  zawartych  w paliwach </b>"
+        line6 = u"<b>powstałych  w wyniku  współuwodornienia,  biorąc  pod  uwagę  stan  wiedzy </b>"
+        line7 = u"<b>technicznej  w tym  zakresie  wynikający  z badań  tych  paliw  lub  doświadczenia </b>"
+        line8 = u"<b>w ich stosowaniu</b>.&gt;<b> </b>"
+        line9 = u"2. Minimalny udział, o którym mowa w ust. 1: </b>"
+        reformatted = self.importer.reformat_text(u""
+            + make_tag(line1, top = 100) + u"\n" 
+            + make_tag(line2, top = 110) + u"\n"
+            + make_tag(line3, top = 120) + u"\n"
+            + make_tag(line4, top = 130) + u"\n"
+            + make_tag(line5, top = 140) + u"\n"
+            + make_tag(line6, top = 150) + u"\n"
+            + make_tag(line7, top = 160) + u"\n"
+            + make_tag(line8, top = 170) + u"\n"
+            + make_tag(line9, top = 180) + u"\n"
+            + make_fontspec_tag())
+        assertEquals(reformatted, u"" 
+                     + u"1d.  Podmiot  realizujący  Narodowy  Cel  Wskaźnikowy  może  zrealizować "
+                     + u"obowiązek,  o którym  mowa  w ust. 1,  z wykorzystaniem  biokomponentów "
+                     + u"zawartych w paliwach powstałych w wyniku współuwodornienia.\n"
+                     + u"1e. Minister właściwy do spraw energii określi, w drodze rozporządzenia, "
+                     + u"metodykę  obliczania  zawartości  biokomponentów  zawartych  w paliwach "
+                     + u"powstałych  w wyniku  współuwodornienia,  biorąc  pod  uwagę  stan  wiedzy "
+                     + u"technicznej  w tym  zakresie  wynikający  z badań  tych  paliw  lub  doświadczenia "
+                     + u"w ich stosowaniu.\n"
+                     + u"2. Minimalny udział, o którym mowa w ust. 1:\n")
 
     def test_reformat_text_remove_hyphenation(self):
         line1 = u"All your base are be-"
