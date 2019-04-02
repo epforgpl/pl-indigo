@@ -441,6 +441,15 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_fontspec_tag())
         assertEquals(reformatted, line1 + u"\n" + line2 + u"\n")
 
+    def test_reformat_text_keep_linebreak_on_subdivisions(self):
+        line1 = u"Oddział 1 All your base are belong to Legia Warszawa FC."
+        line2 = u"Oddział 2 The right to consume sausages shall not be abrogated."
+        reformatted = self.importer.reformat_text(u""
+            + make_tag(line1, top = 100) + u"\n" 
+            + make_tag(line2, top = 110) + u"\n"
+            + make_fontspec_tag())
+        assertEquals(reformatted, line1 + u"\n" + line2 + u"\n")
+
     def test_reformat_text_keep_linebreak_on_statute_level0_units(self):
         line1 = u"Art. 1. All your base are belong to Legia Warszawa FC."
         line2 = u"Art. 2. The right to consume sausages shall not be abrogated."
@@ -487,20 +496,26 @@ class ImporterPLTestCase(testcases.TestCase):
         assertEquals(reformatted, line1 + u"\n" + line2 + u"\n")
 
     def test_reformat_text_keep_linebreak_complex(self):
-        line1 = u"Art. 1ab. Some law."
-        line2 = u"2cd. Some law."
-        line3 = u"§ 3ef. Some law."
-        line4 = u"3gh) Some law."
-        line5 = u"ij) Some law."
+        line1 = u"DZIAŁ IX"
+        line2 = u"Rozdział 3 Some law."
+        line3 = u"Oddział 15 Some law."
+        line4 = u"Art. 1ab. Some law."
+        line5 = u"2cd. Some law."
+        line6 = u"§ 3ef. Some law."
+        line7 = u"3gh) Some law."
+        line8 = u"ij) Some law."
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100) + u"\n" 
             + make_tag(line2, top = 110) + u"\n"
             + make_tag(line3, top = 120) + u"\n"
             + make_tag(line4, top = 130) + u"\n"
-            + make_tag(line5, top = 140)
+            + make_tag(line5, top = 140) + u"\n"
+            + make_tag(line6, top = 150) + u"\n"
+            + make_tag(line7, top = 160) + u"\n"
+            + make_tag(line8, top = 170)
             + make_fontspec_tag())
         assertEquals(reformatted, line1 + u"\n" + line2 + u"\n" + line3 + u"\n" + line4 + u"\n"
-                     + line5 + u"\n")        
+                     + line5 + u"\n" + line6 + u"\n" + line7 + u"\n" + line8 + u"\n")        
 
     def test_reformat_remove_header_footer(self):
         header_text = u"Copyright ISAP"

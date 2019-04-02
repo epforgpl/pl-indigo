@@ -983,6 +983,7 @@ class ImporterPL(Importer):
                       u"TYTUŁ\s+[IVXLC]|"
                       u"DZIAŁ\s+[IVXLC]|"
                       u"Rozdział\s+[IVXLC1-9]|"
+                      u"Oddział\s+[IVXLC1-9]|"
                       u"Art\.|"
                       u"§\s+\d+[a-z]*\.|"
                       u"\d+[a-z]*\.|"
