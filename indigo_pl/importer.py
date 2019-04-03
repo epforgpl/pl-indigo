@@ -274,11 +274,12 @@ class ImporterPL(Importer):
                 if (node_text.startswith(u"w którym poszczególne symbole oznaczają")
                     or node_text.startswith(u"gdzie poszczególne symbole oznaczają")
                     or node_text.startswith(u"w którym poszczególne litery oznaczają")
-                    or node_text.startswith(u"gdzie znaczenie poszczególnych symboli jest następujące")):
+                    or node_text.startswith(u"gdzie znaczenie poszczególnych symboli jest następujące")
+                    or node_text.startswith(u"gdzie współczynnik")):
                     is_in_formula = False
                     # Remove formula nodes.
                     for formula_node in formula_nodes:
-                        formula_node.extract()                    
+                        formula_node.extract()
                 else:
                     formula_nodes.append(node)
             previous_node_text = node_text
