@@ -23,6 +23,7 @@
     <xsl:if test="$prefix = 'BODY' or
                   $prefix = 'PREAMBLE' or
                   $prefix = 'PREFACE' or
+                  starts-with($prefix, 'CZĘŚĆ') or
                   starts-with($prefix, 'KSI') or
                   starts-with($prefix, 'TYTU') or
                   starts-with($prefix, 'ROZDZIA') or
@@ -76,6 +77,29 @@
     <xsl:call-template name="newline"/>
     <xsl:call-template name="newline"/>
     <xsl:apply-templates />
+  </xsl:template>
+
+  <xsl:template match="a:part">
+    <xsl:text>CZĘŚĆ </xsl:text>
+    <xsl:variable name="parttype" select="./a:num"/>
+    <xsl:choose>
+      <xsl:when test="$parttype = 'ogolna'">
+        <xsl:text>OGÓLNA</xsl:text>
+      </xsl:when>
+      <xsl:when test="$parttype = 'szczegolna'">
+        <xsl:text>SZCZEGÓLNA</xsl:text>
+      </xsl:when>
+      <xsl:when test="$parttype = 'wojskowa'">
+        <xsl:text>WOJSKOWA</xsl:text>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:text>[UNKNOWN TYPE]</xsl:text>
+      </xsl:otherwise>
+    </xsl:choose>
+    <xsl:value-of select="./a:heading" />
+    <xsl:call-template name="newline"/>
+    <xsl:call-template name="newline"/>
+    <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
   </xsl:template>
 
   <xsl:template match="a:book">

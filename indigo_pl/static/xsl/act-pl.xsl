@@ -36,6 +36,33 @@
     </xsl:element>
   </xsl:template>
 
+  <xsl:template match="a:part">
+    <section class="akn-part">
+      <xsl:apply-templates select="@*" />
+      <h2>
+        <xsl:text>CZĘŚĆ </xsl:text>
+        <xsl:variable name="parttype" select="./a:num"/>
+        <xsl:choose>
+          <xsl:when test="$parttype = 'ogolna'">
+            <xsl:text>OGÓLNA</xsl:text>
+          </xsl:when>
+          <xsl:when test="$parttype = 'szczegolna'">
+            <xsl:text>SZCZEGÓLNA</xsl:text>
+          </xsl:when>
+          <xsl:when test="$parttype = 'wojskowa'">
+            <xsl:text>WOJSKOWA</xsl:text>
+          </xsl:when>
+          <xsl:otherwise>
+            <xsl:text>[UNKNOWN TYPE]</xsl:text>
+          </xsl:otherwise>
+        </xsl:choose>
+        <br/>
+        <xsl:value-of select="./a:heading" />
+      </h2>
+      <xsl:apply-templates select="./*[not(self::a:num) and not(self::a:heading)]" />
+    </section>
+  </xsl:template>
+
   <xsl:template match="a:book">
     <section class="akn-book">
       <xsl:apply-templates select="@*" />
