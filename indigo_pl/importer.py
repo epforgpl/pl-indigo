@@ -979,6 +979,7 @@ class ImporterPL(Importer):
             str: The law text with line breaks removed.
         """
         return re.sub(ur"\n(?!("
+                      u"CZĘŚĆ\s+(OGÓLNA|SZCZEGÓLNA|WOJSKOWA)|"
                       u"KSIĘGA\s+(PIERWSZA|DRUGA|TRZECIA|CZWARTA|PIĄTA|SZÓSTA|SIÓDMA|ÓSMA)|"
                       u"TYTUŁ\s+[IVXLC]|"
                       u"DZIAŁ\s+[IVXLC]|"
