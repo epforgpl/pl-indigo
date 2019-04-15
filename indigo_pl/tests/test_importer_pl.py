@@ -96,7 +96,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + "The right to consume sausages shall not be abrogated. "
                      + "Chopin must be heard at least once per week.\n")    
 
-    def test_undecorate_outgoing_and_upcoming_sections_1(self):
+    def test_remove_outgoing_and_upcoming_section_markers_1(self):
         line1 = u"<i>[All your base</i>"
         line2 = u"<i>are belong to</i>"
         line3 = u"<i>Legia Warszawa FC.]</i>"
@@ -117,7 +117,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + "The right to consume sausages shall not be abrogated. "
                      + "Chopin must be heard at least per week.\n")
 
-    def test_undecorate_outgoing_and_upcoming_sections_2(self):
+    def test_remove_outgoing_and_upcoming_section_markers_2(self):
         # Ustawa z dnia 12 października 1990 r. o Straży Granicznej
         line1 = u"3)  BSWSG wykonuje Komendant BSWSG. " # This is end of previous unit.
         line2 = u"<b>&lt;Art. 5aa. 1.  Komendant  Główny  Straży  Granicznej  może  upoważnić </b>"
@@ -156,7 +156,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"wydanych na podstawie ustawy.\n"
                      + u"Art. 5b. Kierownicy ...\n")
 
-    def test_undecorate_outgoing_and_upcoming_sections_3(self):
+    def test_remove_outgoing_and_upcoming_section_markers_3(self):
         # Ustawa z dnia 12 października 1990 r. o Straży Granicznej
         line1 = u"<i>zezwolenia ... ostateczna.] </i>" # This is end of previous unit.
         line2 = u"<i>[<b>Art. 16g.</b></i>"
@@ -178,7 +178,7 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line8, top = 170) + u"\n"
             + make_tag(line9, top = 180) + u"\n"
             + make_fontspec_tag())
-        assertEquals(reformatted, u"zezwolenia ... ostateczna.]\n"
+        assertEquals(reformatted, u"zezwolenia ... ostateczna.\n"
                      + u"Art. 16g.\n"
                      + u"1.  Organy  administracji  miar  są  uprawnione  do  przeprowadzania "
                      + u"kontroli  podmiotów  i przedsiębiorców,  o których  mowa  w art. 16a  i art. 16c, "
@@ -188,7 +188,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"stosuje się odpowiednio przepisy art. 21 ust. 1 pkt 1 i 4, ust. 2 i 4.\n"
                      + u"Art. 16g. Organy ...\n")
 
-    def test_undecorate_outgoing_and_upcoming_sections_4(self):
+    def test_remove_outgoing_and_upcoming_section_markers_4(self):
         # Ustawa z dnia 27 sierpnia 2004 r. o świadczeniach opieki zdrowotnej finansowanych 
         # ze środków publicznych.
         line1 = u"<b>przepisy ... &gt; </b>" # This is end of previous unit.
@@ -225,7 +225,7 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line15, top = 240) + u"\n"
             + make_tag(line16, top = 250) + u"\n"
             + make_fontspec_tag())
-        assertEquals(reformatted, u"przepisy ... >\n"
+        assertEquals(reformatted, u"przepisy ...\n"
                      + u"Art. 20.\n"
                      + u"1.  Świadczenia  opieki  zdrowotnej  w szpitalach  i świadczenia "
                      + u"specjalistyczne w ambulatoryjnej opiece zdrowotnej są udzielane według kolejności "
@@ -243,7 +243,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"zdrowotnej.\n"
                      + u"1a. Na  liście  ...\n")
 
-    def test_undecorate_outgoing_and_upcoming_sections_5(self):
+    def test_remove_outgoing_and_upcoming_section_markers_5(self):
         # Ustawa z dnia 15 lipca 2011 r. o zawodach pielęgniarki i położnej. (Art. 80)
         line1 = u"8. Potwierdzenia, o którym mowa w ust. 7, dokonuje się na podstawie wniosku "
         line2 = u"o nadanie uprawnień: "
@@ -265,14 +265,14 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_fontspec_tag())
         assertEquals(reformatted, u"8. Potwierdzenia, o którym mowa w ust. 7, dokonuje się na podstawie wniosku "
                      + u"o nadanie uprawnień:\n"
-                     + u"1)  podpisanego  kwalifikowanym  podpisem  elektronicznym  [lub  podpisem "
-                     + u"zaufanym] <podpisem zaufanym lub podpisem osobistym> lub\n"
+                     + u"1)  podpisanego  kwalifikowanym  podpisem  elektronicznym  lub  podpisem "
+                     + u"zaufanym podpisem zaufanym lub podpisem osobistym lub\n"
                      + u"2)  potwierdzonego  przez  właściwą  okręgową  izbę  pielęgniarek  i  położnych  lub "
                      + u"Naczelną  Izbę  Pielęgniarek  i  Położnych  w  zakresie  danych  podmiotu "
                      + u"zamierzającego wykonywać działalność w zakresie kształcenia podyplomowego, "
                      + u"o którym mowa w ust. 1.\n")
         
-    def test_undecorate_outgoing_and_upcoming_sections_6(self):
+    def test_remove_outgoing_and_upcoming_section_markers_6(self):
         # Ustawa z dnia 16 lipca 2004 r. Prawo telekomunikacyjne        
         line1 = u"<b>Art. 61a.</b> <i>[1. Jeżeli konieczność wprowadzenia zmiany warunków umowy, w tym </i>"
         line2 = u"<i>określonych </i>"
@@ -373,7 +373,7 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"2)  o prawie wypowiedzenia umowy przez abonenta w przypadku braku akceptacji "
                      + u"tych zmian;\n")
 
-    def test_undecorate_outgoing_and_upcoming_sections_7(self):
+    def test_remove_outgoing_and_upcoming_section_markers_7(self):
         # Ustawa z dnia 25 sierpnia 2006 r. o biokomponentach i biopaliwach ciekłych (Art. 23)
         line1 = u"<b>&lt;1d.  Podmiot  realizujący  Narodowy  Cel  Wskaźnikowy  może  zrealizować </b>"
         line2 = u"<b>obowiązek,  o którym  mowa  w ust. 1,  z wykorzystaniem  biokomponentów </b>"
@@ -403,8 +403,45 @@ class ImporterPLTestCase(testcases.TestCase):
                      + u"metodykę  obliczania  zawartości  biokomponentów  zawartych  w paliwach "
                      + u"powstałych  w wyniku  współuwodornienia,  biorąc  pod  uwagę  stan  wiedzy "
                      + u"technicznej  w tym  zakresie  wynikający  z badań  tych  paliw  lub  doświadczenia "
-                     + u"w ich stosowaniu.\n"
+                     + u"w ich stosowaniu.>\n"
                      + u"2. Minimalny udział, o którym mowa w ust. 1:\n")
+
+    def test_remove_outgoing_and_upcoming_section_markers_8(self):
+        # Ustawa z dnia 7 września 1991 r. o systemie oświaty
+        line1 = u"<b>Art. 44u.</b> 1. W <i>[szkole dla dorosłych]</i> <b>&lt;szkole dla dorosłych, branżowej szkole </b>"
+        line2 = u"<b>II stopnia i szkole policealnej&gt;</b> słuchacz w trakcie nauki otrzymuje oceny: "
+        line3 = u"1)  bieżące;"
+        line4 = u"2)  klasyfikacyjne: </b>"
+        line5 = u"a)  semestralne, </b>"
+        line6 = u"b)  końcowe. </b>"
+        line7 = u"2. W <i>[szkole  dla  dorosłych]</i> <b>&lt;szkole  dla  dorosłych,  branżowej  szkole  II </b>"
+        line8 = u"<b>stopnia  i szkole  policealnej&gt;  </b>oceny  są  jawne  dla  słuchacza,  a w przypadku "
+        line9 = u"<i>[słuchacza,  o którym  mowa  w art.  36  ust. 16  pkt  1  ustawy  –  Prawo </i>"
+        line10 = u"<i>oświatowe]</i> <b>&lt;niepełnoletniego słuchacza&gt;</b> – również dla jego rodziców. "
+        reformatted = self.importer.reformat_text(u""
+            + make_tag(line1, top = 100) + u"\n" 
+            + make_tag(line2, top = 110) + u"\n"
+            + make_tag(line3, top = 120) + u"\n"
+            + make_tag(line4, top = 130) + u"\n"
+            + make_tag(line5, top = 140) + u"\n"
+            + make_tag(line6, top = 150) + u"\n"
+            + make_tag(line7, top = 160) + u"\n"
+            + make_tag(line8, top = 170) + u"\n"
+            + make_tag(line9, top = 180) + u"\n"
+            + make_tag(line10, top = 190) + u"\n"
+            + make_fontspec_tag())
+        assertEquals(reformatted, u""
+                     + u"Art. 44u.\n"
+                     + u"1. W szkole dla dorosłych szkole dla dorosłych, branżowej szkole "
+                     + u"II stopnia i szkole policealnej słuchacz w trakcie nauki otrzymuje oceny:\n"
+                     + u"1)  bieżące;\n"
+                     + u"2)  klasyfikacyjne:\n"
+                     + u"a)  semestralne,\n"
+                     + u"b)  końcowe.\n"
+                     + u"2. W szkole  dla  dorosłych szkole  dla  dorosłych,  branżowej  szkole  II "
+                     + u"stopnia  i szkole  policealnej oceny  są  jawne  dla  słuchacza,  a w przypadku "
+                     + u"słuchacza,  o którym  mowa  w art.  36  ust. 16  pkt  1  ustawy  –  Prawo "
+                     + u"oświatowe niepełnoletniego słuchacza – również dla jego rodziców.\n")
 
     def test_reformat_text_remove_hyphenation(self):
         line1 = u"All your base are be-"
