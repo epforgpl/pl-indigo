@@ -86,11 +86,14 @@ class ImporterPL(Importer):
     Getting these numbers from statute: "o usługach zaufania oraz identyfikacji elektronicznej". 
     http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20160001579/U/D20161579Lj.pdf
     """
-    INDENT_LEVELS2 = [76, 111, 143, 170]
+    INDENT_LEVELS2 = [76, 111, 143, 170, 197]
     """The other option for indent levels in unified Polish law PDFs.
 
     Getting these numbers from statute: "o odnawialnych źródłach energii".
-    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20150000478/U/D20150478Lj.pdf    
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20150000478/U/D20150478Lj.pdf
+    
+    And from "o systemie oświaty".
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU19910950425/U/D19910425Lj.pdf    
     """
 
     INDENT_LEVELS3 = [80, 115, 147, 174]
@@ -129,7 +132,7 @@ class ImporterPL(Importer):
         Returns:
             str: Plain text containing the law.
         """
-        text = text.replace("</b><b>", "")
+        text = self.remove_outgoing_and_upcoming_section_markers(text)
         xml = BeautifulSoup(text)
         self.assert_all_text_nodes_have_top_left_height_font_attrs(xml)
         self.remove_empty_text_nodes(xml)
@@ -142,7 +145,9 @@ class ImporterPL(Importer):
         # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
         self.process_superscripts(xml)
         self.remove_footnotes(xml)
-        self.undecorate_outgoing_and_upcoming_sections(xml)
+        # Commented out because it's too hard parse outgoing and upcoming sections for now.
+        # Instead of this, remove_outgoing_and_upcoming_section_markers() was added.
+        # self.undecorate_outgoing_and_upcoming_sections(xml)
         self.assert_only_text_nodes_with_most_common_fontsize_left(xml)
         self.join_text_nodes_on_same_lines(xml)
         self.assert_each_text_node_has_increasing_line_attr(xml)
@@ -153,7 +158,46 @@ class ImporterPL(Importer):
         text = self.remove_linebreaks(text)
         text = self.trim_lines(text)
         return text
-    
+
+    def remove_outgoing_and_upcoming_section_markers(self, text):
+        """Outgoing sections are indicated like this:
+        <i>[Art. 123 This is about to stop being in force.]</i>
+
+        Upcoming sections are indicated like this:
+        <b>&lt;Art. 123 This is about to start being in force.&gt;</b>
+
+        Ideally, we could parse them as such, match them to the marginal notes saying when
+        they go out / come in, and leave the correct ones.
+
+        For now, we just make the resulting text contain both and rely on manual law editors
+        to select the right version.
+
+        I previously tried to go in the direction of parsing them more, in the now commented-out
+        method undecorate_outgoing_and_upcoming_sections().
+
+        Args:
+            text (str): The law text.
+
+        Returns:
+            str: The law text after processing.
+        """
+
+        # Each block has version with whitespace & without.
+        text = re.sub(r"<i>\s+\[", " ", text)
+        text = re.sub(r"<i>\[", "", text)
+
+        text = re.sub(r"\]\s+</i>", " ", text)
+        text = re.sub(r"\]</i>", "", text)
+
+        text = re.sub(r"<b>\s+&lt;", " ", text)
+        text = re.sub(r"<b>&lt;", "", text)
+
+        text = re.sub(r"&gt;\s+</b>", " ", text)
+        text = re.sub(r"&gt;</b>", "", text)
+
+        text = re.sub(r"<i>|</i>|<b>|</b>", "", text)
+        return text
+
     def assert_all_text_nodes_have_top_left_height_font_attrs(self, xml):
         """Make sure all the text XML nodes have all the required attributes, so that we don't
         have to check them later on.
@@ -275,7 +319,8 @@ class ImporterPL(Importer):
                     or node_text.startswith(u"gdzie poszczególne symbole oznaczają")
                     or node_text.startswith(u"w którym poszczególne litery oznaczają")
                     or node_text.startswith(u"gdzie znaczenie poszczególnych symboli jest następujące")
-                    or node_text.startswith(u"gdzie współczynnik")):
+                    or node_text.startswith(u"gdzie współczynnik")
+                    or node_text.startswith(u"gdzie:")):
                     is_in_formula = False
                     # Remove formula nodes.
                     for formula_node in formula_nodes:
@@ -523,8 +568,11 @@ class ImporterPL(Importer):
             if (int(node["fontsize"]) != most_common_fontsize):
                 node.extract()
 
+    # Commented out because it's too hard parse outgoing and upcoming sections for now.
+    # Instead of this, remove_outgoing_and_upcoming_section_markers() was added.
+    """
     def undecorate_outgoing_and_upcoming_sections(self, xml):
-        """In ISAP unified texts, when a given article, etc is changing on some future date, they
+        In ISAP unified texts, when a given article, etc is changing on some future date, they
         first print the current version in italics and inside '[ ... ]' markers, and immediately
         after, they print the upcoming version in bold and inside '< ... >' markers.
 
@@ -652,7 +700,7 @@ class ImporterPL(Importer):
 
         Args:
             xml: The XML to operate on, as a list of tags.
-        """
+
 
         is_in_outgoing_part = False
         is_in_upcoming_part = False
@@ -719,6 +767,7 @@ class ImporterPL(Importer):
                     node.string = btext + u" " + itext.lstrip("[").rstrip("]")
                     if not itext.endswith("]"): # Needed in case outgoing section is one line only.
                         is_in_outgoing_part = True
+    """
 
     def assert_only_text_nodes_with_most_common_fontsize_left(self, xml):
         """Asserts that all <text> nodes have the most common fontsize.
