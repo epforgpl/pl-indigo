@@ -1040,8 +1040,8 @@ class ImporterPL(Importer):
                       u"Rozdział\s+[IVXLC1-9]|"
                       u"Oddział\s+[IVXLC1-9]|"
                       u"Art\.|"
-                      u"§\s+\d+[a-ząćęłńśóźż]*\.|"
-                      u"\d+[a-ząćęłńśóźż]*\.|"
+                      u"§\s+\d+[a-ząćęłńśóźż]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\.|"
+                      u"\d+[a-ząćęłńśóźż]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\.|"
                       u"\d+[a-ząćęłńśóźż]*\)|"
                       u"[a-ząćęłńśóźż]+\)|"
                       u"@@INDENT))", " ", text)
