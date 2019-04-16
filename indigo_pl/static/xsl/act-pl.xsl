@@ -154,8 +154,7 @@
     <section class="akn-subsection">
       <xsl:if test="a:num != ''">
         <h4>
-          <xsl:value-of select="a:num"/>
-          <xsl:text>. </xsl:text>
+          <xsl:call-template name="number-with-superscript"/>
         </h4>
       </xsl:if>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
@@ -166,8 +165,7 @@
     <section class="akn-subsection">
       <h4>
         <xsl:text>§ </xsl:text>
-        <xsl:value-of select="a:num" />
-        <xsl:text>. </xsl:text>
+        <xsl:call-template name="number-with-superscript"/>
       </h4>
       <xsl:apply-templates select="./*[not(self::a:num)]" />
     </section>
