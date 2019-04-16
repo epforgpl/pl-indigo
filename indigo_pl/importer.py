@@ -53,10 +53,12 @@ class ImporterPL(Importer):
     SIGNATURE_REGEX = '^\s*(Dz\.U\.|M\.P\.)\s+\d{4}\s+(Nr\s+\d+\s+)?poz\.\s+\d+\s*$'
     """Regex catching line containing only the law signature, e.g. "Dz.U. 2018 poz. 1234"."""
 
-    LEVEL0_PREFIX_REGEX = ur"(?:Art.|§)\s+\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
+    LEVEL0_PREFIX_REGEX = (ur"(?:Art.|§)\s+\d+[a-ząćęłńóśźż]*"
+                           ur"(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\.")
     """Regex catching line starts for level 0 law hierarchy units."""
 
-    LEVEL1_PREFIX_REGEX = ur"(?:§\s+)?\d+[a-z]*(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\."
+    LEVEL1_PREFIX_REGEX = (ur"(?:§\s+)?\d+[a-ząćęłńóśźż]*"
+                           ur"(?:@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\.")
     """Regex catching line starts for level 1 law hierarchy units."""
 
     INDENT_REGEX = ur"^@@INDENT\d@@"
@@ -65,10 +67,12 @@ class ImporterPL(Importer):
     LEVEL0_PREFIX_WITH_INDENT = INDENT_REGEX + LEVEL0_PREFIX_REGEX
     """Regex catching line starts for level 0 law hierarchy units, with indent info prepended."""
 
-    POINT_PREFIX_WITH_INDENT = INDENT_REGEX + ur"\d+[a-z]*(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
+    POINT_PREFIX_WITH_INDENT = INDENT_REGEX + (ur"\d+[a-ząćęłńóśźż]*" 
+                                               ur"(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) ")
     """Regex catching line starts for "point" law hierarchy units, with indent info prepended."""
 
-    LETTER_PREFIX_WITH_INDENT = INDENT_REGEX + ur"[a-z]+(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) "
+    LETTER_PREFIX_WITH_INDENT = INDENT_REGEX + (ur"[a-ząćęłńóśźż]+"
+                                                ur"(@@SUPERSCRIPT@@[^#]+##SUPERSCRIPT##)?\) ")
     """Regex catching line starts for "letter" law hierarchy units, with indent info prepended."""
 
     DASH_PREFIX_WITH_INDENT = INDENT_REGEX + ur"– "
@@ -1036,10 +1040,10 @@ class ImporterPL(Importer):
                       u"Rozdział\s+[IVXLC1-9]|"
                       u"Oddział\s+[IVXLC1-9]|"
                       u"Art\.|"
-                      u"§\s+\d+[a-z]*\.|"
-                      u"\d+[a-z]*\.|"
-                      u"\d+[a-z]*\)|"
-                      u"[a-z]+\)|"
+                      u"§\s+\d+[a-ząćęłńśóźż]*\.|"
+                      u"\d+[a-ząćęłńśóźż]*\.|"
+                      u"\d+[a-ząćęłńśóźż]*\)|"
+                      u"[a-ząćęłńśóźż]+\)|"
                       u"@@INDENT))", " ", text)
 
     def trim_lines(self, text):
