@@ -541,6 +541,8 @@ class ImporterPLTestCase(testcases.TestCase):
         line6 = u"§ 3ef. Some law."
         line7 = u"3gh) Some law."
         line8 = u"ij) Some law."
+        line9 = u"Art. 16ł."
+        line10 = u"1. Some law."
         reformatted = self.importer.reformat_text(
             make_tag(line1, top = 100) + u"\n" 
             + make_tag(line2, top = 110) + u"\n"
@@ -549,10 +551,13 @@ class ImporterPLTestCase(testcases.TestCase):
             + make_tag(line5, top = 140) + u"\n"
             + make_tag(line6, top = 150) + u"\n"
             + make_tag(line7, top = 160) + u"\n"
-            + make_tag(line8, top = 170)
+            + make_tag(line8, top = 170) + u"\n"
+            + make_tag(line9, top = 180) + u"\n"
+            + make_tag(line10, top = 190)
             + make_fontspec_tag())
         assertEquals(reformatted, line1 + u"\n" + line2 + u"\n" + line3 + u"\n" + line4 + u"\n"
-                     + line5 + u"\n" + line6 + u"\n" + line7 + u"\n" + line8 + u"\n")        
+                     + line5 + u"\n" + line6 + u"\n" + line7 + u"\n" + line8 + u"\n" 
+                     + line9 + u"\n" + line10 + u"\n")        
 
     def test_reformat_remove_header_footer(self):
         header_text = u"Copyright ISAP"
