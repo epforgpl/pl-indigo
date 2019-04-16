@@ -420,7 +420,10 @@
 
   <!-- Helper template to render the number of a given law hierarchy unit, including characters
        in superscript, if needed. Assumes that the number to render is in AKN <num> tag and
-       that if there's a superscript to render, it will be after a "^" character. -->
+       that if there's a superscript to render, it will be after a "^" character.
+       
+       It is a bit beyond me to do this for ranges of numbers with possible superscripts 
+       without regexes... -->
   <xsl:template name="number-with-superscript">
     <!-- No regexes in XSLT 1.0 :( -->
     <xsl:if test="contains(a:num, '^')">
