@@ -849,7 +849,7 @@ class ImporterPL(Importer):
             indent_level = self.get_indent_level(left, indent_levels)
             if not indent_level is None:
                 node["indent"] = indent_level
-                node.string = "@@INDENT" + str(indent_level) + "@@" + node.get_text()
+                node.string = "@@INDENT" + str(indent_level) + "@@" + node.get_text().strip()
 
         # Check all line starts. If they begin with a dash, and the dash is just in a running
         # piece of text (as opposed to e.g. a list of tirets, or explanatory section at the end
@@ -949,7 +949,7 @@ class ImporterPL(Importer):
             return False
         current_indent_level = int(node["indent"])
         last_indent_level = int(last_line_start["indent"])
-        last_line = last_line_start.get_text()
+        last_line = last_line_start.get_text().strip()
         if current_indent_level == 0:
             if (last_indent_level == 0) and (not re.match(self.POINT_PREFIX_WITH_INDENT,last_line)):
                 return True
@@ -994,7 +994,7 @@ class ImporterPL(Importer):
         regex = ( ur"^(" + self.LEVEL0_PREFIX_REGEX + ur")" + ur"\s+"
                  + ur"(" + self.LEVEL1_PREFIX_REGEX + ur")")
         for node in xml.find_all('text'):
-            node.string = re.sub(regex, ur"\g<1>\n\g<2>", node.get_text())
+            node.string = re.sub(regex, ur"\g<1>\n\g<2>", node.get_text().strip())
             
     def xml_to_text(self, xml):
         """Convert the Beautiful Soup XML into plain text. I'm not using xml.get_text() because
