@@ -592,12 +592,14 @@ class ImporterPLTestCase(testcases.TestCase):
         text3 = u". Bla bla bla "
         after = u"Some other text"
         reformatted = self.importer.reformat_text(""
-            + make_tag(before, 90, ImporterPL.INDENT_LEVELS1[0], 18) # Previous line.
-            + make_tag(text1, 100, ImporterPL.INDENT_LEVELS1[0], 18)
-            + make_tag(text2, 99, ImporterPL.INDENT_LEVELS1[1], 12) # Note lower "top" and "height"
-            + make_tag(text3, 100, ImporterPL.INDENT_LEVELS1[2], 18)
-            + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18)
-            + make_fontspec_tag()) # Following line.
+            + make_tag(before, 90, ImporterPL.INDENT_LEVELS1[0], 18, 1) # Previous line.
+            + make_tag(text1, 100, ImporterPL.INDENT_LEVELS1[0], 18, 1)
+            # Note lower "top" and "height", and different fontsize
+            + make_tag(text2, 99, ImporterPL.INDENT_LEVELS1[1], 12, 2)
+            + make_tag(text3, 100, ImporterPL.INDENT_LEVELS1[2], 18, 1)
+            + make_tag(after, 110, ImporterPL.INDENT_LEVELS1[0], 18, 1) # Following line.
+            + make_fontspec_tag(font_id = 1, size = 18)
+            + make_fontspec_tag(font_id = 2, size = 12))
         assertEquals(reformatted, before.strip() + u"\n"  
                      + text1.strip() + ImporterPL.SUPERSCRIPT_START + text2.strip()
                      + ImporterPL.SUPERSCRIPT_END + text3.strip() + u" " + after.strip() + u"\n")

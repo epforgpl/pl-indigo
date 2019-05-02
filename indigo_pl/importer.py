@@ -50,6 +50,32 @@ class ImporterPL(Importer):
     RIGHT_MARGIN_START_OFFSET = 630
     """How far from left edge of page we assume right margin starts."""
 
+    SPECIFIC_PHRASES_TO_REMOVE = [
+        (   # Ustawa z dnia 28 sierpnia 1997 r. o organizacji i funkcjonowaniu funduszy emerytalnych       
+            u"""2a. Otwarty fundusz może pokrywać bezpośrednio ze swoich aktywów także
+                koszty zarządzania funduszem przez towarzystwo według stawki ustalonej w statucie,
+                jednak nieprzekraczającej kwot obliczonych według następującej skali:""",
+            u"""Kwota ta jest obliczana na każdy dzień ustalania wartości aktywów netto funduszu
+                i płatna w ostatnim dniu roboczym każdego miesiąca.""",
+            u"(sprawdź tabelę w tekście oficjalnym)"
+            ),
+        (   # Ustawa z dnia 27 sierpnia 2009 r. o finansach publicznych
+            u"""Art. 112aa. 1. Kwota wydatków na dany rok organów i jednostek, o których
+                mowa w art. 9 pkt 1–3, pkt 8 z wyłączeniem Zakładu Ubezpieczeń Społecznych,
+                i w pkt 9 oraz Funduszu Pracy, Bankowego Funduszu Gwarancyjnego, a także
+                funduszy utworzonych, powierzonych lub przekazanych Bankowi Gospodarstwa
+                Krajowego na podstawie odrębnych ustaw, jest obliczana według wzoru:""",
+            u"""2. W kwocie wydatków, o której mowa w ust. 1, i w kwocie, o którą
+                pomniejsza się tę kwotę zgodnie z ust. 3, nie uwzględnia się wydatków budżetu
+                środków europejskich oraz wydatków finansowanych ze środków, o których mowa""",
+            u"(sprawdź wzór w tekście oficjalnym)")
+        ]
+    """A list containing tuples, each with three strings:
+       1. The text preceding a phrase we want to delete.
+       2. The text following a phrase we want to delete.
+       3. The text we want to insert instead of the phrase to delete.
+    """
+
     SIGNATURE_REGEX = '^\s*(Dz\.U\.|M\.P\.)\s+\d{4}\s+(Nr\s+\d+\s+)?poz\.\s+\d+\s*$'
     """Regex catching line containing only the law signature, e.g. "Dz.U. 2018 poz. 1234"."""
 
@@ -90,6 +116,7 @@ class ImporterPL(Importer):
     Getting these numbers from statute: "o usługach zaufania oraz identyfikacji elektronicznej". 
     http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20160001579/U/D20161579Lj.pdf
     """
+
     INDENT_LEVELS2 = [76, 111, 143, 170, 197]
     """The other option for indent levels in unified Polish law PDFs.
 
@@ -100,7 +127,16 @@ class ImporterPL(Importer):
     http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU19910950425/U/D19910425Lj.pdf    
     """
 
-    INDENT_LEVELS3 = [80, 115, 147, 174]
+    INDENT_LEVELS3 = [77, 111, 143, 170, 197]
+    """The other option for indent levels in unified Polish law PDFs.
+
+    Getting these numbers from statute: "o Rzeczniku Praw Dziecka".
+    http://isap.sejm.gov.pl/isap.nsf/download.xsp/WDU20000060069/U/D20000069Lj.pdf
+    
+    Note that it's almost the same as for INDENT_LEVELS2   
+    """    
+
+    INDENT_LEVELS4 = [80, 115, 147, 174]
     """Yet another other option for indent levels in unified Polish law PDFs.
 
     Getting these numbers from statute: "Prawo geodezyjne i kartograficzne".
@@ -144,6 +180,7 @@ class ImporterPL(Importer):
         self.remove_right_margin(xml)
         self.add_fontsize_to_all_text_nodes(xml)
         self.remove_formulas(xml)
+        self.remove_specific_unparsable_text_units(xml)
         self.make_top_attribute_monotonically_increasing(xml)
         self.add_line_nums_to_law_text(xml)
         # At this point, all <text> nodes with most common "fontsize" have "line" attribute.
@@ -317,6 +354,12 @@ class ImporterPL(Importer):
                         is_in_formula = True
                 elif (previous_node_text.endswith(u"według następującego")):
                     is_in_formula = True
+            elif (node_text.endswith(u"wzorem:")):
+                # Check phrase "wyrażony wzorem:".
+                if (node_text.endswith(u"wyrażony wzorem:")):
+                    is_in_formula = True
+                elif (previous_node_text.endswith(u"wyrażony")):
+                    is_in_formula = True
             elif (is_in_formula):
                 # Here is how we catch end of formula. Add other phrases if needed.
                 if (node_text.startswith(u"w którym poszczególne symbole oznaczają")
@@ -334,6 +377,62 @@ class ImporterPL(Importer):
             previous_node_text = node_text
         if (is_in_formula):
             raise Exception('After iterating through entire law text, parser is inside a formula.')
+
+    def remove_specific_unparsable_text_units(self, xml):
+        """Remove <text> nodes which for whatever reason are unparseable. Usually these will be
+        tables, formulas, etc. To add a new phrase, put the text preceding and following it in
+        the constant SPECIFIC_PHRASES_TO_REMOVE.
+
+        Args:
+            xml: The XML to operate on, as a list of tags.
+        """
+        is_in = None
+        remove_from = -1
+        remove_to = -1
+        nodes = xml.find_all("text")
+        # Go through all text nodes ...
+        for i in range(0, len(nodes) - 9):
+            snippet = u""
+            # ... using a moving window containing 10 nodes (nodes[i] through nodes[i + 9]).
+            for j in range(0, 10):
+                # Construct a string from the text in these nodes.
+                snippet = snippet + nodes[i + j].get_text()
+            snippet = snippet.replace(" ", "")
+            if (is_in == None):
+                for phrase in self.SPECIFIC_PHRASES_TO_REMOVE:
+                    # Text preceding the phrase to remove.
+                    before = phrase[0].replace(" ", "").replace(u"\n", "")
+                    if snippet.find(before) != -1:
+                        is_in = phrase
+                        remove_from = i + 10
+                        break
+            else:
+                # Text following the phrase to remove.
+                after = is_in[1].replace(" ", "").replace(u"\n", "")
+                if snippet.find(after) != -1:
+                    # We found the text following the phrase to remove in the moving window.
+                    # However, the moving window may now contain not only the text following the
+                    # phrase, but part of the phrase itself. So, we'll find the exact index
+                    # where the text following the phrase to remove starts, and remove things
+                    # up to that index.
+                    snippet = u""
+                    for j in reversed(range(0, 10)):
+                        snippet = nodes[i + j].get_text().replace(" ", "") + snippet
+                        if snippet.find(after) != -1:
+                            remove_to = i + j - 1
+                            break
+
+                    # Delete the phrase to remove (leave last node to put explanatory text in it).
+                    for j in range(remove_from, remove_to):
+                        # Caveat: I'm not sure if this modification of nodes list affects further
+                        # iteration in the main loop. If so, store ranges to remove and do it later.
+                        nodes[j].extract()
+                    # Replace the contents of the last node to remove with an explanatory text.
+                    nodes[remove_to].string = is_in[2]
+
+                    is_in = None
+                    remove_from = -1
+                    remove_to = -1
 
     def make_top_attribute_monotonically_increasing(self, xml):
         """Increase "top" attribute of <text> nodes by
@@ -384,7 +483,11 @@ class ImporterPL(Importer):
         
         So, this method looks for nodes where height is equal "most_common_height - 3" (or 2) and:
         - increases "height" by 2-3
-        - decreases "top" by 3.         
+        - decreases "top" by 3.
+
+        Later on, I also added a difference of 6 points, which sometimes happens too.
+        Note that (I hope) this won't cause errors in superscript parsing, because they seem
+        to have smaller fontsize attribute than normal text.
 
         Args:
             xml: The XML to operate on, as a list of tags.
@@ -398,6 +501,9 @@ class ImporterPL(Importer):
             if (int(node["height"]) == most_common_height - 3):
                 node["height"] = most_common_height
                 node["top"] = int(node["top"]) - 3
+            if (int(node["height"]) == most_common_height - 6):
+                node["height"] = most_common_height
+                node["top"] = int(node["top"]) - 6
 
     def add_line_nums_to_law_text(self, xml):
         """For all <text> tags that represent parts of the law text, add a "line" attribute
@@ -445,7 +551,9 @@ class ImporterPL(Importer):
             top = int(node["top"])
             left = int(node["left"])
             if (top - 2 < last_top) and (top + 2 > last_top):
-                if (left <= last_left + last_width):
+                # In theory, the condition should be "if (left <= last_left + last_width):"
+                # But in practice, this happens (e.g. "ustawa o sejmowej komisji śledczej").
+                if (left < last_left + last_width - 1):
                     raise Exception("Non-increasing 'left' attribute: [" + str(left) 
                         + "] at node (last_left = [" + str(last_left) + "]): \n" + str(node)) 
             elif (top > last_top):
@@ -801,7 +909,9 @@ class ImporterPL(Importer):
                 continue
             if int(node["line"]) > int(last_node["line"]):
                 last_node = node
-            elif int(node["left"]) > int(last_node["left"]) + int(last_node["width"]):
+            # In theory, this should be 'node["left"] > last_node["left"] + last_node["width"]'
+            # In practice, it needs to be relaxed, e.g. in "ustawa o sejmowej komisji śledczej".
+            elif (int(node["left"]) >= int(last_node["left"]) + int(last_node["width"]) - 1):
                 last_node.string = last_node.get_text().strip() + " " + node.get_text().strip()
                 last_node["width"] = int(last_node["width"]) + int(node["width"])
                 node.extract()
@@ -902,8 +1012,10 @@ class ImporterPL(Importer):
             return self.INDENT_LEVELS1
         if (lefts[0] == 76):
             return self.INDENT_LEVELS2
-        if (lefts[0] == 80):
+        if (lefts[0] == 77):
             return self.INDENT_LEVELS3
+        if (lefts[0] == 80):
+            return self.INDENT_LEVELS4
         raise Exception('Could not match any indent level set to the document.')
 
     def get_indent_level(self, left, indents):
